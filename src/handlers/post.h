@@ -15,6 +15,7 @@ namespace C3 {
   void handle_post_read(const crow::request &req, crow::response &res, uint64_t id);
   void handle_post_create(const crow::request &req, crow::response &res);
   void handle_post_update(const crow::request &req, crow::response &res, uint64_t id);
+  void handle_post_delete(const crow::request &req, crow::response &res, uint64_t id);
 
   void handle_post_list(const crow::request &req, crow::response &res) {
     return handle_post_list_page(req, res, 1);
@@ -34,7 +35,7 @@ namespace C3 {
       std::string cont = get_post_str(id);
       res.end(cont);
       return;
-    } catch(ReadExcept &e) {
+    } catch(StorageExcept &e) {
       if(e == NotFound) {
         res.code = 404;
         res.end("404 Not Found");
@@ -50,7 +51,6 @@ namespace C3 {
 
   void handle_post_create(const crow::request &req, crow::response &res) {
     try {
-      std::cout<<req.body<<std::endl;
       uint64_t id = add_post(json_to_new_post(req.body));
       Json::Value v;
       v["id"] = id;
@@ -63,9 +63,34 @@ namespace C3 {
 
   void handle_post_update(const crow::request &req, crow::response &res, uint64_t id) {
     try {
-      std::cout<<req.body<<std::endl;
       update_post(id, json_to_post(req.body));
       res.end("{\"ok\":0}");
+    } catch(StorageExcept &e) {
+      if(e == IDMismatch) {
+        res.code = 400;
+        res.end("400 Bad Request");
+      } else {
+        res.code = 500;
+        res.end("500 Internal Error");
+      }
+    } catch(...) {
+      res.code = 500;
+      res.end("500 Internal Error");
+    }
+  }
+
+  void handle_post_delete(const crow::request &req, crow::response &res, uint64_t id) {
+    try {
+      delete_post(id);
+      res.end("{\"ok\":0}");
+    } catch(StorageExcept &e) {
+      if(e == NotFound) {
+        res.code = 404;
+        res.end("404 Not Found");
+      } else {
+        res.code = 500;
+        res.end("500 Internal Error");
+      }
     } catch(...) {
       res.code = 500;
       res.end("500 Internal Error");

@@ -4,13 +4,10 @@
 #include <vector>
 
 namespace C3 {
-  enum ReadExcept {
+  enum StorageExcept {
     NotFound = 0,
-    ParseError = 1
-  };
-
-  enum WriteExcept {
-    IDMismatch = 0
+    ParseError = 1,
+    IDMismatch = 2
   };
 
   struct Post {
@@ -65,7 +62,7 @@ namespace C3 {
 
   uint64_t add_comment(const Comment &comment);
   std::vector<Comment> get_comment(uint64_t post_id);
-  bool delete_comment(uint64_t post_id, uint64_t comment_id);
+  void delete_comment(uint64_t post_id, uint64_t comment_id);
 
   //TODO: Indexes
 };

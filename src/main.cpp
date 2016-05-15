@@ -31,7 +31,10 @@ int main() {
     if(req.method == "GET"_method) return handle_post_read(req, res, id);
 
     /* Update post */
-    else return handle_post_update(req, res, id);
+    else if(req.method == "POST"_method) return handle_post_update(req, res, id);
+
+    /* Delete post */
+    else return handle_post_delete(req, res, id);
   };
 
   CROW_ROUTE(app, "/posts").methods("GET"_method, "POST"_method)(posts_dispatcher);
@@ -39,7 +42,7 @@ int main() {
   /* List page */
   CROW_ROUTE(app, "/posts/<int>").methods("GET"_method)(handle_post_list_page);
 
-  CROW_ROUTE(app, "/post/<uint>").methods("GET"_method ,"POST"_method)(post_dispatcher);
+  CROW_ROUTE(app, "/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
 
   app.port(PORT).multithreaded().run();
 }

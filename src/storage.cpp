@@ -160,4 +160,12 @@ namespace C3 {
     leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(id), post_to_json(post));
     if(!s.ok()) throw s;
   }
+  
+  void delete_post(const uint64_t &id) {
+    leveldb::Status s = postDB->Delete(leveldb::WriteOptions(), std::to_string(id));
+    if(!s.ok()) {
+      if(s.IsNotFound()) throw NotFound;
+      else throw s;
+    }
+  }
 }
