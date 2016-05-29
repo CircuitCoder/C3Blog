@@ -5,11 +5,34 @@
 #include <cassert>
 #include <chrono>
 #include <leveldb/db.h>
+#include <leveldb/write_batch.h>
 #include <json/json.h>
 
 namespace C3 {
+
+  bool _entryEquals(const std::string &entry, const std::string &key) {
+    auto eit = entry.begin();
+    auto kit = key.begin();
+
+    while(kit != key.end()) {
+      if(eit == entry.end()) return false;
+      else if(*eit != *kit) return false;
+      ++kit;
+      ++eit;
+    }
+
+    if(eit == entry.end() || *eit == ',') return true;
+    else return false;
+  }
+
+
   Randomizer _rand;
+  CommaSepComparator comp;
+
   leveldb::DB *postDB;
+  leveldb::DB *indexDB;
+  leveldb::DB *commentDB;
+  leveldb::DB *entryDB;
 
   Json::Reader reader;
   Json::FastWriter writer;
@@ -29,6 +52,29 @@ namespace C3 {
       uint64_t comment_time) :
         email(email), content(content), comment_time(comment_time) { }
 
+  int CommaSepComparator::Compare(const leveldb::Slice &a, const leveldb::Slice &b) const {
+    std::string sa = a.ToString();
+    std::string sb = b.ToString();
+
+    std::vector<std::string> ia = split(sa, ',');
+    std::vector<std::string> ib = split(sb, ',');
+
+    for(int i = 0; ; ++i) {
+      if(i == ia.size()) {
+        if(i == ib.size()) return 0;
+        else return -1;
+      } else if(i == ib.size()) return 1;
+
+      if(ia[i] < ib[i]) return -1;
+      else if(ia[i] > ib[i]) return 1;
+    }
+  }
+
+  const char* CommaSepComparator::Name() const { return "CommaSepComparator"; }
+
+  void CommaSepComparator::FindShortestSeparator(std::string *, const leveldb::Slice &) const { }
+
+  void CommaSepComparator::FindShortSuccessor(std::string *) const { }
 
   std::string post_to_json(const Post& p) {
     Json::Value r;
@@ -114,17 +160,31 @@ namespace C3 {
 
   void setup_storage(const std::string &dir) {
 
-    // Post DB
     // TODO: cache
     std::cout<<"Opening/Creating db at "<<dir<<std::endl;
-    leveldb::Options postOpt;
-    postOpt.create_if_missing = true;
-    leveldb::Status postStatus = leveldb::DB::Open(postOpt, dir + "/post", &postDB);
+
+    leveldb::Options dbOpt;
+    dbOpt.create_if_missing = true;
+    dbOpt.comparator = &comp;
+
+    leveldb::Status postStatus = leveldb::DB::Open(dbOpt, dir + "/post", &postDB);
     assert(postStatus.ok());
+
+    leveldb::Status indexStatus = leveldb::DB::Open(dbOpt, dir + "/index", &indexDB);
+    assert(indexStatus.ok());
+
+    leveldb::Status commentStatus = leveldb::DB::Open(dbOpt, dir + "/comment", &commentDB);
+    assert(commentStatus.ok());
+
+    leveldb::Status entryStatus = leveldb::DB::Open(dbOpt, dir + "/entry", &entryDB);
+    assert(entryStatus.ok());
   }
 
   void stop_storage(void) {
     delete postDB;
+    delete indexDB;
+    delete commentDB;
+    delete indexDB;
   }
 
   uint64_t add_post(const Post &post) {
@@ -167,5 +227,66 @@ namespace C3 {
       if(s.IsNotFound()) throw NotFound;
       else throw s;
     }
+  }
+
+  std::list<Post> list_posts(int offset, int count) {
+    leveldb::Iterator *it = postDB->NewIterator(leveldb::ReadOptions());
+    it->SeekToFirst();
+
+    std::list<Post> result;
+
+    while(it->Valid() && offset-- > 0) it->Next();
+
+    for(int i = 0; i < count && it->Valid(); ++i) {
+      result.push_back(json_to_post(it->value().ToString()));
+      it->Next();
+    }
+
+    return result;
+  }
+
+  /* Entries */
+  void _generate_remove_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
+    for(auto it = list.begin(); it != list.end(); ++it)
+      batch.Delete(*it + "," + std::to_string(id));
+  }
+
+  void _generate_add_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
+    for(auto it = list.begin(); it != list.end(); ++it)
+      batch.Put(*it + "," + std::to_string(id), std::to_string(id));
+  }
+
+  void remove_entries(const uint64_t &id, const std::list<std::string> &list) {
+    leveldb::WriteBatch batch;
+    _generate_remove_entries(id, list, batch);
+    entryDB->Write(leveldb::WriteOptions(), &batch);
+  }
+
+  void add_entries(const uint64_t &id, const std::list<std::string> &list) {
+    leveldb::WriteBatch batch;
+    _generate_add_entries(id, list, batch);
+    entryDB->Write(leveldb::WriteOptions(), &batch);
+  }
+
+  void add_remove_entries(const uint64_t &id, const std::list<std::string> &add, const std::list<std::string> &remove) {
+    leveldb::WriteBatch batch;
+    _generate_add_entries(id, add, batch);
+    _generate_remove_entries(id, remove, batch);
+    /* TODO: status */
+    entryDB->Write(leveldb::WriteOptions(), &batch);
+  }
+
+  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count) {
+    leveldb::Iterator *it = entryDB->NewIterator(leveldb::ReadOptions());
+    it->Seek(entry);
+
+    std::list<uint64_t> result;
+    while(it->Valid() && offset-- > 0) it->Next();
+
+    for(int i = 0; i < count && it->Valid() && _entryEquals(it->key().ToString(), entry); ++i) {
+      result.push_back(std::stoull(it->value().ToString()));
+      it->Next();
+    }
+    return result;
   }
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <random>
+#include <string>
+#include <vector>
 
 namespace C3 {
   class Randomizer {
@@ -15,4 +17,6 @@ namespace C3 {
   };
 
   uint64_t current_time(void);
+
+  std::vector<std::string> split(const std::string &, char);
 }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <crow.h>
+#include <signal.h>
 
 #include "storage.h"
 #include "handler.h"
@@ -10,7 +11,21 @@ using namespace C3;
 
 const int PORT = 3018;
 
+void stop_handler(int s) {
+  std::cout<<"Shutdown down..."<<std::endl;
+  stop_storage();
+}
+
+
 int main() {
+
+  struct sigaction sigIntHandler;
+
+  sigIntHandler.sa_handler = stop_handler;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
+
+  sigaction(SIGINT, &sigIntHandler, NULL);
 
   /* Setup */
   setup_storage("./db");
@@ -43,6 +58,11 @@ int main() {
   CROW_ROUTE(app, "/posts/<int>").methods("GET"_method)(handle_post_list_page);
 
   CROW_ROUTE(app, "/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
+
+  //TODO: /post/<string>
+
+  CROW_ROUTE(app, "/tag/<string>").methods("GET"_method)(handle_post_tag_list);
+  CROW_ROUTE(app, "/tag/<string>/<uint>").methods("GET"_method)(handle_post_tag_list_page);
 
   app.port(PORT).multithreaded().run();
 }
