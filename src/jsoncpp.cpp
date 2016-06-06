@@ -2577,7 +2577,7 @@ static inline void releaseStringValue(char* value, unsigned length) {
 static inline void releasePrefixedStringValue(char* value) {
   free(value);
 }
-static inline void releaseStringValue(char* value, unsigned) {
+static inline void releaseStringValue(char* value, unsigned length) {
   free(value);
 }
 #endif // JSONCPP_USING_SECURE_MEMORY

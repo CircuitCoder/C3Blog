@@ -37,7 +37,7 @@ namespace C3 {
       Json::Value e;
       e["url"] = i->url;
       e["topic"] = i->topic;
-      e["post_time"] = i->post_time;
+      e["post_time"] = (Json::UInt64) i->post_time;
 
       v.append(e);
     }
@@ -61,7 +61,7 @@ namespace C3 {
       Json::Value e;
       e["url"] = p.url;
       e["topic"] = p.topic;
-      e["post_time"] = p.post_time;
+      e["post_time"] = (Json::UInt64) p.post_time;
 
       v.append(e);
     }
@@ -101,7 +101,7 @@ namespace C3 {
       add_entries(id, tags);
 
       Json::Value v;
-      v["id"] = id;
+      v["id"] = (Json::UInt64) id;
       res.end(writer.write(v));
     } catch(...) {
       res.code = 500;

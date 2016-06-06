@@ -82,7 +82,7 @@ namespace C3 {
     r["topic"] = p.topic;
     r["source"] = p.source;
     r["content"] = p.content;
-    r["post_time"] = p.post_time;
+    r["post_time"] = (Json::UInt64) p.post_time;
     Json::Value v;
     for(auto &&e : p.tags) v.append(e);
     r["tags"] = v;
