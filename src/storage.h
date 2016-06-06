@@ -65,7 +65,7 @@ namespace C3 {
   Comment json_to_comment(const std::string &str);
   Comment json_to_new_comment(const std::string &str);
 
-  void setup_storage(const std::string &dir);
+  bool setup_storage(const std::string &dir);
   void stop_storage(void);
 
   /* Posts */

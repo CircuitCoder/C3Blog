@@ -7,6 +7,7 @@
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
 #include <json/json.h>
+#include <boost/filesystem.hpp>
 
 namespace C3 {
 
@@ -158,10 +159,34 @@ namespace C3 {
     return c;
   }
 
-  void setup_storage(const std::string &dir) {
+  bool setup_storage(const std::string &dir) {
+    // Ckeck if the folder exists
+
+    boost::filesystem::path dbpath(dir);
+    if(!boost::filesystem::exists(dbpath)) {
+      std::cout<<"Storage: Creating database path: "<<dir<<std::endl;
+      // Check for parent pathes
+
+      for(auto p = dbpath.parent_path();; p = p.parent_path()) {
+        if(p.empty()) break; // Valid
+        if(!boost::filesystem::exists(p)) continue;
+        if(boost::filesystem::is_directory(p)) break; // Valid
+        else {
+          std::cout<<"Storage: "<<p.native()<<" is not a directory."<<std::endl;
+          return false;
+        }
+      }
+      if(!boost::filesystem::create_directories(dbpath)) {
+        std::cout<<"Storage: Failed to create database path"<<std::endl;
+        return false;
+      }
+    } else if(!boost::filesystem::is_directory(dbpath)) {
+      std::cout<<"Storage: "<<dir<<" is not a directory."<<std::endl;
+      return false;
+    }
 
     // TODO: cache
-    std::cout<<"Opening/Creating db at "<<dir<<std::endl;
+    std::cout<<"Storage: Opening/Creating db at "<<dir<<std::endl;
 
     leveldb::Options dbOpt;
     dbOpt.create_if_missing = true;
@@ -178,6 +203,8 @@ namespace C3 {
 
     leveldb::Status entryStatus = leveldb::DB::Open(dbOpt, dir + "/entry", &entryDB);
     assert(entryStatus.ok());
+
+    return true;
   }
 
   void stop_storage(void) {

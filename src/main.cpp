@@ -6,6 +6,7 @@
 #include "handler.h"
 #include "middleware.h"
 #include "util.h"
+#include "config.h"
 
 using namespace C3;
 
@@ -28,7 +29,16 @@ int main() {
   sigaction(SIGINT, &sigIntHandler, NULL);
 
   /* Setup */
-  setup_storage("./db");
+  Config c;
+  if(!c.read("config.yml")) {
+    std::cout<<"Failed to parse config file. Aborting."<<std::endl;
+    return -1;
+  }
+
+  if(!setup_storage(c.db_path)) {
+    std::cout<<"Failed to initialize storage. Aborting."<<std::endl;
+    return -1;
+  }
 
   crow::App<Middleware> app;
 
@@ -64,5 +74,9 @@ int main() {
   CROW_ROUTE(app, "/tag/<string>").methods("GET"_method)(handle_post_tag_list);
   CROW_ROUTE(app, "/tag/<string>/<uint>").methods("GET"_method)(handle_post_tag_list_page);
 
-  app.port(PORT).multithreaded().run();
+  if(c.server_multithreaded) {
+    app.port(c.server_port).multithreaded().run();
+  } else {
+    app.port(c.server_port).run();
+  }
 }

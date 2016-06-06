@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(Boost_USE_MULTITHREADED ON)
 
-find_package(Boost 1.54.0 COMPONENTS system thread REQUIRED)
+find_package(Boost 1.54.0 COMPONENTS system thread filesystem REQUIRED)
 find_package(LevelDB REQUIRED)
 find_package(Threads)
 find_package(PkgConfig)

@@ -1,14 +1,15 @@
 # CMake
-Makefile
-CMakeFiles
-CMakeCache.txt
-cmake_install.cmake
+/Makefile
+/CMakeFiles
+/CMakeCache.txt
+/cmake_install.cmake
 
 # Binary
-c3_blog
+/c3_blog
 
 # Testing
-db
+/db
+/config.yml
 
 # Vim
 .*.sw[a-p]
