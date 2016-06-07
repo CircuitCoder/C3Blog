@@ -17,33 +17,77 @@ namespace C3 {
   };
 
   struct Post {
+    std::string uident;
     std::string url;
     std::string topic;
-    std::string source;
     std::string content;
     std::vector<std::string> tags;
 
     uint64_t post_time;
 
     Post(
-        std::string url,
-        std::string topic,
-        std::string source,
-        std::string content,
-        std::vector<std::string> tags,
+        const std::string &uident,
+        const std::string &url,
+        const std::string &topic,
+        const std::string &content,
+        const std::vector<std::string> &tags,
         uint64_t post_time);
+
+    Post(const std::string &json);
+
+    Post(const std::string &json, const std::string &uident);
+
+    std::string to_json(void) const;
   };
 
   struct Comment {
-    std::string email;
+    std::string uident; // type,id
     std::string content;
 
     uint64_t comment_time;
 
     Comment(
-        std::string email,
-        std::string content,
+        const std::string &uident,
+        const std::string &content,
         uint64_t comment_time);
+
+    Comment(const std::string &json);
+
+    Comment(const std::string &json, const std::string &uident);
+
+    std::string to_json(void) const;
+  };
+
+  struct User {
+    enum UserType {
+      uGoogle, // Currently only support google login
+      uUnknown
+    };
+
+    UserType type;
+    std::string id;
+
+    std::string name;
+    std::string email;
+    std::string avatar;
+
+    User(
+        UserType type,
+        const std::string &id,
+        const std::string &name,
+        const std::string &email,
+        const std::string &avatar);
+
+    User(const std::string &json);
+
+    std::string to_json(void) const;
+
+    std::string getKey(void) const {
+      if(type == uGoogle)
+        return "google," + id;
+      else
+        return "unknown," + id;
+    }
   };
 
   class CommaSepComparator : public leveldb::Comparator {
@@ -57,13 +101,6 @@ namespace C3 {
 
   typedef struct Post Post;
   typedef struct Comment Comment;
-
-  std::string post_to_json(const Post& p);
-  std::string comment_to_json(const Comment& c);
-  Post json_to_post(const std::string& str);
-  Post json_to_new_post(const std::string& str);
-  Comment json_to_comment(const std::string &str);
-  Comment json_to_new_comment(const std::string &str);
 
   bool setup_storage(const std::string &dir);
   void stop_storage(void);

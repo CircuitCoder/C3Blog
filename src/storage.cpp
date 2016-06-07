@@ -26,8 +26,6 @@ namespace C3 {
     else return false;
   }
 
-
-  Randomizer _rand;
   CommaSepComparator comp;
 
   leveldb::DB *postDB;
@@ -39,19 +37,127 @@ namespace C3 {
   Json::FastWriter writer;
 
   Post::Post(
-      std::string url,
-      std::string topic,
-      std::string source,
-      std::string content,
-      std::vector<std::string> tags,
+      const std::string &uident,
+      const std::string &url,
+      const std::string &topic,
+      const std::string &content,
+      const std::vector<std::string> &tags,
       uint64_t post_time) :
-        url(url), topic(topic), source(source), content(content), tags(tags), post_time(post_time) {}
+        uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time) {}
+
+  Post::Post(const std::string &json) {
+    Json::Value r;
+    if(!reader.parse(json, r)) throw ParseError;
+
+    std::vector<std::string> tags(r["tags"].size());
+    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
+      tags[it.index()] = it->asString();
+    }
+
+    uident = r["uident"].asString();
+    url = r["url"].asString();
+    topic = r["topic"].asString();
+    content = r["content"].asString();
+    tags = tags;
+    post_time = r["post_time"].asUInt64();
+  }
+
+  Post::Post(const std::string &json, const std::string &uident) :
+        uident(uident), post_time(current_time()) {
+    Json::Value r;
+    if(!reader.parse(json, r)) throw ParseError;
+
+    std::vector<std::string> tags(r["tags"].size());
+    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
+      tags[it.index()] = it->asString();
+    }
+
+    url = r["url"].asString();
+    topic = r["topic"].asString();
+    content = r["content"].asString();
+    tags = tags;
+  }
+
+  std::string Post::to_json(void) const {
+    Json::Value r;
+    r["uident"] = uident;
+    r["url"] = url;
+    r["topic"] = topic;
+    r["content"] = content;
+    r["post_time"] = (Json::UInt64) post_time;
+    Json::Value v;
+    for(auto e : tags) v.append(e);
+    r["tags"] = v;
+
+    return writer.write(r);
+  }
 
   Comment::Comment(
-      std::string email,
-      std::string content,
+      const std::string &uident,
+      const std::string &content,
       uint64_t comment_time) :
-        email(email), content(content), comment_time(comment_time) { }
+        uident(uident), content(content), comment_time(comment_time) { }
+
+  Comment::Comment(const std::string &json) {
+    Json::Value r;
+    if(!reader.parse(json, r)) throw ParseError;
+
+    uident = r["uident"].asString();
+    content = r["content"].asString();
+    comment_time = r["comment_time"].asUInt64();
+  }
+
+  Comment::Comment(const std::string &json, const std::string &uident) :
+        uident(uident), comment_time(current_time()) {
+    Json::Value r;
+    if(!reader.parse(json, r)) throw ParseError;
+
+    content = r["content"].asString();
+  }
+
+  std::string Comment::to_json(void) const {
+    Json::Value r;
+    r["uident"] = uident;
+    r["content"] = content;
+
+    return writer.write(r);
+  }
+
+  User::User(
+      UserType type,
+      const std::string &id,
+      const std::string &name,
+      const std::string &email,
+      const std::string &avatar) :
+        type(type), id(id), name(name), email(email), avatar(avatar) { }
+
+  User::User(const std::string &json) {
+    Json::Value r;
+    if(!reader.parse(json, r)) throw ParseError;
+
+    // Type
+    std::string typestr = r["type"].asString();
+    if(typestr == "google") type = uGoogle;
+    else type = uUnknown;
+
+    id = r["id"].asString();
+    name = r["name"].asString();
+    email = r["email"].asString();
+    avatar = r["avatar"].asString();
+  }
+
+  std::string User::to_json(void) const {
+    Json::Value r;
+    if(type == uGoogle) r["type"] = "google";
+    else r["type"] = "unknown";
+
+    r["id"] = id;
+    r["name"] = name;
+    r["email"] = email;
+    r["avatar"] = avatar;
+
+    return writer.write(r);
+  }
 
   int CommaSepComparator::Compare(const leveldb::Slice &a, const leveldb::Slice &b) const {
     std::string sa = a.ToString();
@@ -76,88 +182,6 @@ namespace C3 {
   void CommaSepComparator::FindShortestSeparator(std::string *, const leveldb::Slice &) const { }
 
   void CommaSepComparator::FindShortSuccessor(std::string *) const { }
-
-  std::string post_to_json(const Post& p) {
-    Json::Value r;
-    r["url"] = p.url;
-    r["topic"] = p.topic;
-    r["source"] = p.source;
-    r["content"] = p.content;
-    r["post_time"] = (Json::UInt64) p.post_time;
-    Json::Value v;
-    for(auto &&e : p.tags) v.append(e);
-    r["tags"] = v;
-
-    return writer.write(r);
-  }
-
-  std::string comment_to_json(const Comment& c) {
-    Json::Value r;
-    r["email"] = c.email;
-    r["content"] = c.content;
-
-    return writer.write(r);
-  }
-
-  Post json_to_post(const std::string& str) {
-    Json::Value r;
-    if(!reader.parse(str, r)) throw ParseError;
-
-    std::vector<std::string> tags(r["tags"].size());
-    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
-      tags[it.index()] = it->asString();
-    }
-
-    Post p(
-        r["url"].asString(),
-        r["topic"].asString(),
-        r["source"].asString(),
-        r["content"].asString(),
-        tags,
-        r["post_time"].asUInt64());
-    return p;
-  }
-
-  Post json_to_new_post(const std::string &str) {
-    Json::Value r;
-    if(!reader.parse(str, r)) throw ParseError;
-
-    std::vector<std::string> tags(r["tags"].size());
-    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
-      tags[it.index()] = it->asString();
-    }
-
-    Post p(
-        r["url"].asString(),
-        r["topic"].asString(),
-        r["source"].asString(),
-        r["content"].asString(),
-        tags,
-        current_time());
-    return p;
-  }
-
-  Comment json_to_comment(const std::string &str) {
-    Json::Value r;
-    if(!reader.parse(str, r)) throw ParseError;
-
-    Comment c(
-        r["email"].asString(),
-        r["content"].asString(),
-        r["comment_time"].asUInt64());
-    return c;
-  }
-
-  Comment json_to_new_comment(const std::string &str) {
-    Json::Value r;
-    if(!reader.parse(str, r)) throw ParseError;
-
-    Comment c(
-        r["email"].asString(),
-        r["content"].asString(),
-        current_time());
-    return c;
-  }
 
   bool setup_storage(const std::string &dir) {
     // Ckeck if the folder exists
@@ -220,7 +244,7 @@ namespace C3 {
     
     //Assume that we can't submit two post at the same nanosecond
     //TODO: upate tags and indexes
-    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(ts), post_to_json(post));
+    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(ts), post.to_json());
     if(s.ok()) return ts;
     else {
       throw s;
@@ -228,7 +252,7 @@ namespace C3 {
   }
 
   Post get_post(const uint64_t &id) {
-    return json_to_post(get_post_str(id));
+    return Post(get_post_str(id));
   }
 
   std::string get_post_str(const uint64_t &id) {
@@ -244,7 +268,7 @@ namespace C3 {
   void update_post(const uint64_t &id, const Post &post) {
     if(!(post.post_time == id)) throw IDMismatch;
     //TODO: upate tags and indexes
-    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(id), post_to_json(post));
+    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(id), post.to_json());
     if(!s.ok()) throw s;
   }
   
@@ -265,7 +289,7 @@ namespace C3 {
     while(it->Valid() && offset-- > 0) it->Next();
 
     for(int i = 0; i < count && it->Valid(); ++i) {
-      result.push_back(json_to_post(it->value().ToString()));
+      result.push_back(Post(it->value().ToString()));
       it->Next();
     }
 

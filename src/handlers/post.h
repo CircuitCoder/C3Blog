@@ -90,7 +90,7 @@ namespace C3 {
 
   void handle_post_create(const crow::request &req, crow::response &res) {
     try {
-      Post p = json_to_new_post(req.body);
+      Post p(req.body, "unknown,dummy");
       sort(p.tags.begin(), p.tags.end());
       uint64_t id = add_post(p);
 
@@ -112,7 +112,7 @@ namespace C3 {
   void handle_post_update(const crow::request &req, crow::response &res, uint64_t id) {
     try {
       Post original = get_post(id);
-      Post current = json_to_post(req.body);
+      Post current(req.body);
 
       // Tags
       sort(current.tags.begin(), current.tags.end());
@@ -148,7 +148,7 @@ namespace C3 {
 
       //TODO: batch
       add_remove_entries(id, added, removed);
-      update_post(id, json_to_post(req.body));
+      update_post(id, Post(req.body));
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
