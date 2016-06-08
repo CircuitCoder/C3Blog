@@ -1,5 +1,6 @@
 #include <yaml-cpp/yaml.h>
 #include <string>
+#include <iostream>
 
 #include "config.h"
 
