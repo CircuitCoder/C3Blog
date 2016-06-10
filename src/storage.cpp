@@ -62,7 +62,7 @@ namespace C3 {
     url = r["url"].asString();
     topic = r["topic"].asString();
     content = r["content"].asString();
-    tags = tags;
+    this->tags = tags;
     post_time = r["post_time"].asUInt64();
   }
 
@@ -79,7 +79,7 @@ namespace C3 {
     url = r["url"].asString();
     topic = r["topic"].asString();
     content = r["content"].asString();
-    tags = tags;
+    this->tags = tags;
   }
 
   std::string Post::to_json(void) const {
