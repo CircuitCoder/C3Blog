@@ -90,9 +90,16 @@ namespace C3 {
     }
   };
 
+  enum class Limitor {
+    Less, Greater
+  };
+
   class CommaSepComparator : public leveldb::Comparator {
+  private:
+    std::vector<Limitor> lims;
 
   public:
+    CommaSepComparator(std::initializer_list<Limitor> lims);
     int Compare(const leveldb::Slice &a, const leveldb::Slice &b) const;
     const char* Name() const;
     void FindShortestSeparator(std::string *, const leveldb::Slice &) const;

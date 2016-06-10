@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdarg>
 #include <chrono>
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
@@ -26,7 +27,10 @@ namespace C3 {
     else return false;
   }
 
-  CommaSepComparator comp;
+  CommaSepComparator postCmp({ Limitor::Greater });
+  CommaSepComparator commentCmp({ Limitor::Greater, Limitor::Less });
+  CommaSepComparator entryCmp({ Limitor::Less, Limitor::Greater });
+  CommaSepComparator indexCmp({ Limitor::Less, Limitor::Greater });
 
   leveldb::DB *postDB;
   leveldb::DB *indexDB;
@@ -159,6 +163,9 @@ namespace C3 {
     return writer.write(r);
   }
 
+  CommaSepComparator::CommaSepComparator(std::initializer_list<Limitor> lims) :
+     lims(lims) { }
+
   int CommaSepComparator::Compare(const leveldb::Slice &a, const leveldb::Slice &b) const {
     std::string sa = a.ToString();
     std::string sb = b.ToString();
@@ -172,8 +179,17 @@ namespace C3 {
         else return -1;
       } else if(i == ib.size()) return 1;
 
-      if(ia[i] < ib[i]) return -1;
-      else if(ia[i] > ib[i]) return 1;
+      Limitor lim;
+      if(i<this->lims.size()) lim = this->lims[i];
+      else lim = Limitor::Less;
+
+      if(lim == Limitor::Less) {
+        if(ia[i] < ib[i]) return -1;
+        else if(ia[i] > ib[i]) return 1;
+      } else {
+        if(ia[i] < ib[i]) return 1;
+        else if(ia[i] > ib[i]) return -1;
+      }
     }
   }
 
@@ -212,20 +228,32 @@ namespace C3 {
     // TODO: cache
     std::cout<<"Storage: Opening/Creating db at "<<dir<<std::endl;
 
-    leveldb::Options dbOpt;
-    dbOpt.create_if_missing = true;
-    dbOpt.comparator = &comp;
+    leveldb::Options postOpt;
+    postOpt.create_if_missing = true;
+    postOpt.comparator = &postCmp;
 
-    leveldb::Status postStatus = leveldb::DB::Open(dbOpt, dir + "/post", &postDB);
+    leveldb::Status postStatus = leveldb::DB::Open(postOpt, dir + "/post", &postDB);
     assert(postStatus.ok());
 
-    leveldb::Status indexStatus = leveldb::DB::Open(dbOpt, dir + "/index", &indexDB);
+    leveldb::Options indexOpt;
+    indexOpt.create_if_missing = true;
+    indexOpt.comparator = &indexCmp;
+
+    leveldb::Status indexStatus = leveldb::DB::Open(indexOpt, dir + "/index", &indexDB);
     assert(indexStatus.ok());
 
-    leveldb::Status commentStatus = leveldb::DB::Open(dbOpt, dir + "/comment", &commentDB);
+    leveldb::Options commentOpt;
+    commentOpt.create_if_missing = true;
+    commentOpt.comparator = &commentCmp;
+
+    leveldb::Status commentStatus = leveldb::DB::Open(commentOpt, dir + "/comment", &commentDB);
     assert(commentStatus.ok());
 
-    leveldb::Status entryStatus = leveldb::DB::Open(dbOpt, dir + "/entry", &entryDB);
+    leveldb::Options entryOpt;
+    entryOpt.create_if_missing = true;
+    entryOpt.comparator = &entryCmp;
+
+    leveldb::Status entryStatus = leveldb::DB::Open(entryOpt, dir + "/entry", &entryDB);
     assert(entryStatus.ok());
 
     return true;
