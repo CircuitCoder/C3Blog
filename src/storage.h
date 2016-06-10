@@ -118,7 +118,7 @@ namespace C3 {
   void delete_post(const uint64_t &id);
   Post get_post(const uint64_t &id);
   std::string get_post_str(const uint64_t &id);
-  std::list<Post> list_posts(int offset, int count);
+  std::list<Post> list_posts(int offset, int count, bool &hasNext);
 
   /* Comments */
   uint64_t add_comment(const Comment &comment);
@@ -129,7 +129,7 @@ namespace C3 {
   void remove_entries(const uint64_t &id, const std::list<std::string> &list);
   void add_entries(const uint64_t &id, const std::list<std::string> &list);
   void add_remove_entries(const uint64_t &id, const std::list<std::string> &added, const std::list<std::string> &removed);
-  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count);
+  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext);
 
   //TODO: Indexes
 };

@@ -30,17 +30,23 @@ namespace C3 {
     int offset = (page-1) * PPP;
     int count = PPP;
 
-    std::list<Post> p = list_posts(offset, count);
+    bool hasNext;
+
+    std::list<Post> p = list_posts(offset, count, hasNext);
     // TODO: total count
-    Json::Value v(Json::arrayValue);
+    Json::Value posts(Json::arrayValue);
     for(auto i = p.begin(); i != p.end(); ++i) {
       Json::Value e;
       e["url"] = i->url;
       e["topic"] = i->topic;
       e["post_time"] = (Json::UInt64) i->post_time;
 
-      v.append(e);
+      posts.append(e);
     }
+
+    Json::Value v;
+    v["posts"] = posts;
+    v["hasNext"] = hasNext;
 
     res.end(writer.write(v));
   }
@@ -53,9 +59,11 @@ namespace C3 {
     int offset = (page-1) * PPP;
     int count = PPP;
 
-    std::list<uint64_t> ids = list_posts_by_tag(tag, offset, count);
+    bool hasNext;
 
-    Json::Value v(Json::arrayValue);
+    std::list<uint64_t> ids = list_posts_by_tag(tag, offset, count, hasNext);
+
+    Json::Value posts(Json::arrayValue);
     for(auto i = ids.begin(); i != ids.end(); ++i) {
       Post p = get_post(*i);
       Json::Value e;
@@ -63,8 +71,12 @@ namespace C3 {
       e["topic"] = p.topic;
       e["post_time"] = (Json::UInt64) p.post_time;
 
-      v.append(e);
+      posts.append(e);
     }
+
+    Json::Value v;
+    v["posts"] = posts;
+    v["hasNext"] = hasNext;
 
     res.end(writer.write(v));
   }

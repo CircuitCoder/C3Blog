@@ -308,7 +308,7 @@ namespace C3 {
     }
   }
 
-  std::list<Post> list_posts(int offset, int count) {
+  std::list<Post> list_posts(int offset, int count, bool &hasNext) {
     leveldb::Iterator *it = postDB->NewIterator(leveldb::ReadOptions());
     it->SeekToFirst();
 
@@ -320,6 +320,8 @@ namespace C3 {
       result.push_back(Post(it->value().ToString()));
       it->Next();
     }
+
+    hasNext = it->Valid();
 
     return result;
   }
@@ -355,7 +357,7 @@ namespace C3 {
     entryDB->Write(leveldb::WriteOptions(), &batch);
   }
 
-  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count) {
+  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext) {
     leveldb::Iterator *it = entryDB->NewIterator(leveldb::ReadOptions());
     it->Seek(entry);
 
@@ -366,6 +368,8 @@ namespace C3 {
       result.push_back(std::stoull(it->value().ToString()));
       it->Next();
     }
+
+    hasNext = it->Valid() && _entryEquals(it->key().ToString(), entry);
     return result;
   }
 }
