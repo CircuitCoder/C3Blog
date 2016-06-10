@@ -40,6 +40,8 @@ int main() {
     return -1;
   }
 
+  setup_middleware(c);
+
   crow::App<Middleware> app;
 
   auto posts_dispatcher = [](const crow::request &req, crow::response &res) -> void {

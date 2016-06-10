@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 
 namespace C3 {
@@ -13,6 +15,9 @@ namespace C3 {
 
     // Database
     std::string db_path;
+
+    // Security
+    std::vector<std::string> security_origins;
   };
 
   Config read_config(const std::string &path);

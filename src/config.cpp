@@ -1,4 +1,5 @@
 #include <yaml-cpp/yaml.h>
+#include <cassert>
 #include <string>
 #include <iostream>
 
@@ -37,6 +38,20 @@ namespace C3 {
         this->db_path = config["db"]["path"].as<std::string>();
       } catch(YAML::BadConversion e) {
         WARN_BAD_FORMAT("db.path", "a string");
+        return false;
+      }
+
+      try {
+        if(config["security"]["origins"].IsSequence()) {
+          for(auto it = config["security"]["origins"].begin(); it != config["security"]["origins"].end(); ++it) {
+            this->security_origins.push_back(it->as<std::string>());
+          }
+        } else {
+          WARN_BAD_FORMAT("security.origins", "a list containing strings");
+          return false;
+        }
+      } catch(YAML::BadConversion e) {
+        WARN_BAD_FORMAT("security.origins", "a list containing strings");
         return false;
       }
     } catch(YAML::Exception e) {
