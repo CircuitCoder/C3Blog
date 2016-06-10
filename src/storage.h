@@ -110,6 +110,7 @@ namespace C3 {
   typedef struct Comment Comment;
 
   bool setup_storage(const std::string &dir);
+  bool setup_url_map(void);
   void stop_storage(void);
 
   /* Posts */

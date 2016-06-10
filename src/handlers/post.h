@@ -6,6 +6,7 @@
 #include <json/json.h>
 
 #include "storage.h"
+#include "mapper.h"
 
 const int PPP = 10; // Post per page
 
@@ -18,6 +19,7 @@ namespace C3 {
   void handle_post_tag_list(const crow::request &req, crow::response &res, const std::string &tag);
   void handle_post_tag_list_page(const crow::request &req, crow::response &res, const std::string &tag, int page);
   void handle_post_read(const crow::request &req, crow::response &res, uint64_t id);
+  void handle_post_read_url(const crow::request &req, crow::response &res, const std::string &url);
   void handle_post_create(const crow::request &req, crow::response &res);
   void handle_post_update(const crow::request &req, crow::response &res, uint64_t id);
   void handle_post_delete(const crow::request &req, crow::response &res, uint64_t id);
@@ -100,11 +102,35 @@ namespace C3 {
     }
   }
 
+  void handle_post_read_url(const crow::request &req, crow::response &res, const std::string &url) {
+    uint64_t id;
+    try {
+      id = query_url(url);
+    } catch(MapperError e) {
+      if(e == MapperError::UrlNotFound) {
+        res.code = 404;
+        res.end("404 Not Found");
+      }
+    }
+
+    return handle_post_read(req, res, id);
+  }
+
   void handle_post_create(const crow::request &req, crow::response &res) {
     try {
       Post p(req.body, "unknown,dummy");
+
+      if(has_url(p.url)) {
+        res.code = 200;
+        res.end("{ error: 'dulicatedUrl' }");
+        return;
+      }
+
       sort(p.tags.begin(), p.tags.end());
       uint64_t id = add_post(p);
+
+      //TODO: thread safety
+      add_url(p.url, id);
 
       //TODO: template
       std::list<std::string> tags(p.tags.begin(), p.tags.end());
@@ -156,7 +182,9 @@ namespace C3 {
         }
       }
 
-      //TODO: url
+      if(original.url != current.url)
+        rename_url(original.url, current.url, id);
+      //TODO: handle validation
 
       //TODO: batch
       add_remove_entries(id, added, removed);
@@ -181,6 +209,7 @@ namespace C3 {
     try {
       Post p = get_post(id);
 
+      remove_url(p.url);
       //TODO: batch
       std::list<std::string> tags(p.tags.begin(), p.tags.end());
       remove_entries(id, tags);

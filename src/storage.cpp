@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "util.h"
+#include "mapper.h"
 
 #include <iostream>
 #include <cassert>
@@ -226,7 +227,7 @@ namespace C3 {
     }
 
     // TODO: cache
-    std::cout<<"Storage: Opening/Creating db at "<<dir<<std::endl;
+    std::cout<<"Storage: Opening db at "<<dir<<std::endl;
 
     leveldb::Options postOpt;
     postOpt.create_if_missing = true;
@@ -255,6 +256,22 @@ namespace C3 {
 
     leveldb::Status entryStatus = leveldb::DB::Open(entryOpt, dir + "/entry", &entryDB);
     assert(entryStatus.ok());
+
+    return true;
+  }
+
+  bool setup_url_map(void) {
+    auto it = postDB->NewIterator(leveldb::ReadOptions());
+
+    for(it->SeekToFirst(); it->Valid(); it->Next()) {
+      try {
+        Post p(it->value().ToString());
+        add_url(p.url, p.post_time);
+      } catch(MapperError e) {
+        if(e == MapperError::DuplicatedUrl) return false;
+        else throw;
+      }
+    }
 
     return true;
   }

@@ -41,6 +41,7 @@ int main() {
   }
 
   setup_middleware(c);
+  setup_url_map();
 
   crow::App<Middleware> app;
 
@@ -69,7 +70,10 @@ int main() {
   /* List page */
   CROW_ROUTE(app, "/posts/<int>").methods("GET"_method)(handle_post_list_page);
 
-  CROW_ROUTE(app, "/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
+  /* Internal post methods */
+  CROW_ROUTE(app, "/internal/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
+
+  CROW_ROUTE(app, "/post/<string>").methods("GET"_method)(handle_post_read_url);
 
   //TODO: /post/<string>
 
