@@ -24,4 +24,62 @@ namespace C3 {
     while(std::getline(ss, item, delim)) elems.push_back(item);
     return elems;
   }
+
+  namespace URLEncoding {
+
+    // From http://www.geekhideout.com/urlcode.shtml
+
+    /* Converts a hex character to its integer value */
+    char from_hex(char ch) {
+      return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
+    }
+
+    /* Converts an integer value to its hex character*/
+    char to_hex(char code) {
+      static char hex[] = "0123456789abcdef";
+      return hex[code & 15];
+    }
+
+    /* Returns a url-encoded version of str */
+    std::string url_encode(std::string str) {
+      auto pstr = str.begin();
+      std::stringstream buf;
+
+      while (pstr != str.end()) {
+        if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~') 
+          buf<<*pstr;
+        else if (*pstr == ' ') 
+          buf<<'+';
+        else 
+          buf<<'%'<<to_hex(*pstr >> 4)<<to_hex(*pstr & 15);
+
+        ++pstr;
+      }
+
+      return buf.str();
+    }
+
+    /* Returns a url-decoded version of str */
+    std::string url_decode(std::string str) {
+      auto pstr = str.begin();
+      std::stringstream buf;
+
+      while (pstr != str.end()) {
+        if (*pstr == '%') {
+          if (pstr + 1 != str.end() && pstr + 2 != str.end()) {
+            buf<<(char) (from_hex(*(pstr + 1)) << 4 | from_hex(*(pstr + 2)));
+            pstr += 2;
+          }
+        } else if (*pstr == '+') { 
+          buf<<' ';
+        } else {
+          buf<<*pstr;
+        }
+
+        ++pstr;
+      }
+
+      return buf.str();
+    }
+  }
 }

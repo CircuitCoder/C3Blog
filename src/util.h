@@ -19,4 +19,9 @@ namespace C3 {
   uint64_t current_time(void);
 
   std::vector<std::string> split(const std::string &, char);
+
+  namespace URLEncoding {
+    std::string url_encode(std::string str);
+    std::string url_decode(std::string str);
+  }
 }

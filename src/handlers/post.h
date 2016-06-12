@@ -63,7 +63,7 @@ namespace C3 {
 
     bool hasNext;
 
-    std::list<uint64_t> ids = list_posts_by_tag(tag, offset, count, hasNext);
+    std::list<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext);
 
     Json::Value posts(Json::arrayValue);
     for(auto i = ids.begin(); i != ids.end(); ++i) {
