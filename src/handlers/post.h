@@ -105,7 +105,7 @@ namespace C3 {
   void handle_post_read_url(const crow::request &req, crow::response &res, const std::string &url) {
     uint64_t id;
     try {
-      id = query_url(url);
+      id = query_url(URLEncoding::url_decode(url));
     } catch(MapperError e) {
       if(e == MapperError::UrlNotFound) {
         res.code = 404;
