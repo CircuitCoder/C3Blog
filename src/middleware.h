@@ -14,6 +14,7 @@ namespace C3 {
 
     void before_handle(crow::request &req, crow::response &res, context& ctx) {
       res.set_header("Access-Control-Allow-Origin", origins);
+      res.set_header("Access-Control-Allow-Credentials", "true");
     }
     void after_handle(crow::request &req, crow::response &res, context& ctx) { }
   };

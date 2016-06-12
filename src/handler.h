@@ -1,6 +1,7 @@
 #pragma once
 
 #include "handlers/post.h"
+#include "handlers/util.h"
 /*
 #include "handlers/index.h"
 #include "handlers/comment.h"

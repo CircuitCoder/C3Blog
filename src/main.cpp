@@ -51,7 +51,10 @@ int main() {
     if(req.method == "GET"_method) return handle_post_list(req, res);
 
     /* New post */
-    else return handle_post_create(req, res);
+    else if(req.method == "POST"_method) return handle_post_create(req, res);
+
+    /* Preflight check */
+    else return handle_cors_preflight(req, res);
   };
 
   auto post_dispatcher = [](const crow::request &req, crow::response &res, const uint64_t &id) -> void {
@@ -62,16 +65,19 @@ int main() {
     else if(req.method == "POST"_method) return handle_post_update(req, res, id);
 
     /* Delete post */
-    else return handle_post_delete(req, res, id);
+    else if(req.method == "DELETE"_method) return handle_post_delete(req, res, id);
+    
+    /* Preflight check */
+    else return handle_cors_preflight(req, res);
   };
 
-  CROW_ROUTE(app, "/posts").methods("GET"_method, "POST"_method)(posts_dispatcher);
+  CROW_ROUTE(app, "/posts").methods("GET"_method, "POST"_method, "OPTIONS"_method)(posts_dispatcher);
   
   /* List page */
   CROW_ROUTE(app, "/posts/<int>").methods("GET"_method)(handle_post_list_page);
 
   /* Internal post methods */
-  CROW_ROUTE(app, "/internal/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
+  CROW_ROUTE(app, "/internal/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method, "OPTIONS"_method)(post_dispatcher);
 
   CROW_ROUTE(app, "/post/<string>").methods("GET"_method)(handle_post_read_url);
 
