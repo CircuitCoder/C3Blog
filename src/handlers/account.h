@@ -20,16 +20,36 @@ namespace C3 {
   }
   
   void handle_account_login(const crow::request &req, crow::response &res) {
+
     Json::Value body;
-    if(!reader.parse(req.body, body) || !body.isObject() || !body.isMember("token") || !body["token"].isString()) {
+    if(!reader.parse(req.body, body)
+        || !body.isObject()
+        || !body.isMember("token")
+        || !body["token"].isString()
+        || !body.isMember("sub")
+        || !body["sub"].isString()) {
       res.code = 400;
       res.end("400 Bad Request");
       return;
     }
 
-    std::string token = body["token"].asString();
+    context * ctx = (context *) req.middleware_context;
+    Middleware::context &cookieCtx = ctx->get<Middleware>();
 
-    auto verifier = [token, &res, &req]() -> void {
+    std::string token = body["token"].asString();
+    std::string sub = body["sub"].asString();
+
+    if(cookieCtx.session.signedIn && cookieCtx.session.uident == std::string("google,") + sub) {
+      res.code = 200;
+      Json::Value v;
+
+      v["valid"] = true;
+      v["isAuthor"] = cookieCtx.session.isAuthor;
+      res.end(writer.write(v));
+      return;
+    }
+
+    auto verifier = [token, sub, &res, &cookieCtx]() -> void {
       CURL *curl = curl_easy_init();
       if(curl) {
         // Using google for right now
@@ -72,14 +92,17 @@ namespace C3 {
           }
         }
 
-        std::string email = jres["email"].asString();
+        if(!jres.isMember("sub") || !jres["sub"].isString() || jres["sub"].asString() != sub) {
+          res.code = 403;
+          res.end("{\"error_description\":\"Sub mismatch\"}");
+          return;
+        }
 
-        context * ctx = (context *) req.middleware_context;
-        Middleware::context &cookieCtx = ctx->get<Middleware>();
+        std::string email = jres["email"].asString();
 
         cookieCtx.session.isAuthor = Auth::isAuthor(email);
         cookieCtx.session.signedIn = true;
-        cookieCtx.session.uident = std::string("google,") + jres["sub"].asString();
+        cookieCtx.session.uident = std::string("google,") + sub;
         cookieCtx.saveSession = true;
 
         Json::Value v;
@@ -99,5 +122,15 @@ namespace C3 {
     verifyThread.detach();
   }
 
-  void handle_account_logout(const crow::request &req, crow::response &res);
+  void handle_account_logout(const crow::request &req, crow::response &res) {
+    context * ctx = (context *) req.middleware_context;
+    Middleware::context &cookieCtx = ctx->get<Middleware>();
+
+    cookieCtx.session.isAuthor = false;
+    cookieCtx.session.signedIn = false;
+    cookieCtx.session.uident = "";
+    cookieCtx.saveSession = true;
+
+    res.end("{\"ok\": 0}");
+  }
 }

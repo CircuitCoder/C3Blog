@@ -22,18 +22,24 @@ namespace C3 {
     void before_handle(crow::request &req, crow::response &res, context& ctx, AllContext &ctxs) {
       res.set_header("Access-Control-Allow-Origin", origins);
       res.set_header("Access-Control-Allow-Credentials", "true");
+      res.set_header("Access-Control-Allow-Methods", req.get_header_value("Access-Control-Request-Method"));
+      res.set_header("Access-Control-Allow-Headers", req.get_header_value("Access-Control-Request-Headers"));
 
       // Initial session
       auto &pctx = ctxs.template get<crow::CookieParser>();
       std::string sid = pctx.get_cookie("c3_sid");
       if(sid == "") {
         sid = random_chars(64);
-        std::cout<<"Set cookie: "<<sid<<std::endl;
         pctx.set_cookie("c3_sid", sid);
       }
 
       ctx.sid = sid;
       ctx.session = Auth::getSession(sid);
+
+      if(req.method == "OPTIONS"_method) {
+        res.end();
+        return;
+      }
     }
 
     void after_handle(crow::request &req, crow::response &res, context& ctx) {

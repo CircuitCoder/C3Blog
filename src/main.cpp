@@ -53,9 +53,6 @@ int main() {
 
     /* New post */
     else if(req.method == "POST"_method) return handle_post_create(req, res);
-
-    /* Preflight check */
-    else return handle_cors_preflight(req, res);
   };
 
   auto post_dispatcher = [](const crow::request &req, crow::response &res, const uint64_t &id) -> void {
@@ -67,18 +64,15 @@ int main() {
 
     /* Delete post */
     else if(req.method == "DELETE"_method) return handle_post_delete(req, res, id);
-    
-    /* Preflight check */
-    else return handle_cors_preflight(req, res);
   };
 
-  CROW_ROUTE(app, "/posts").methods("GET"_method, "POST"_method, "OPTIONS"_method)(posts_dispatcher);
+  CROW_ROUTE(app, "/posts").methods("GET"_method, "POST"_method)(posts_dispatcher);
   
   /* List page */
   CROW_ROUTE(app, "/posts/<int>").methods("GET"_method)(handle_post_list_page);
 
   /* Internal post methods */
-  CROW_ROUTE(app, "/internal/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method, "OPTIONS"_method)(post_dispatcher);
+  CROW_ROUTE(app, "/internal/post/<uint>").methods("GET"_method ,"POST"_method, "DELETE"_method)(post_dispatcher);
 
   CROW_ROUTE(app, "/post/<string>").methods("GET"_method)(handle_post_read_url);
 
@@ -86,6 +80,7 @@ int main() {
   CROW_ROUTE(app, "/tag/<string>/<uint>").methods("GET"_method)(handle_post_tag_list_page);
 
   CROW_ROUTE(app, "/account/login").methods("POST"_method)(handle_account_login);
+  CROW_ROUTE(app, "/account/logout").methods("POST"_method)(handle_account_logout);
 
   if(c.server_multithreaded) {
     app.port(c.server_port).multithreaded().run();
