@@ -5,6 +5,8 @@
 #include <curl/curl.h>
 #include <thread>
 
+#include "auth.h"
+
 namespace C3 {
 
   extern Json::FastWriter writer;
@@ -28,7 +30,6 @@ namespace C3 {
     std::string token = body["token"].asString();
 
     auto verifier = [token, &res]() -> void {
-      std::cout<<"VERIFIER"<<std::endl;
       CURL *curl = curl_easy_init();
       if(curl) {
         // Using google for right now
@@ -48,11 +49,37 @@ namespace C3 {
           return;
         }
 
-        std::cout<<buf<<std::endl;
-
-        res.end("{}");
-
         curl_easy_cleanup(curl);
+
+        // No user database for right now
+
+        Json::Value jres;
+        if(!reader.parse(buf, jres) || !jres.isObject()) {
+          res.code = 500;
+          res.end("500 Internal Error");
+          return;
+        }
+
+        if(!jres.isMember("email") || !jres["email"].isString()) {
+          if(jres.isMember("error_description")) {
+            res.code = 403;
+            res.end(buf);
+            return;
+          } else {
+            res.code = 500;
+            res.end("500 Internal Error");
+            return;
+          }
+        }
+
+        std::string email = jres["email"].asString();
+
+        Json::Value v;
+
+        v["valid"] = true;
+        v["isAuthor"] = Auth::isAuthor(email);
+
+        res.end(writer.write(v));
       } else {
         res.code = 500;
         res.end("500 Internal Error");

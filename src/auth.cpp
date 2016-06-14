@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "config.h"
+
 namespace C3 {
   namespace Auth {
     std::unordered_set<std::string> authors;
@@ -23,6 +25,10 @@ namespace C3 {
 
     void addAuthor(const std::string &email) {
       authors.insert(email);
+    }
+
+    void setupAuthors(const Config &c) {
+      authors.insert(c.user_authors.begin() ,c.user_authors.end());
     }
   }
 }

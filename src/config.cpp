@@ -54,6 +54,20 @@ namespace C3 {
         WARN_BAD_FORMAT("security.origins", "a list containing strings");
         return false;
       }
+
+      try {
+        if(config["user"]["authors"].IsSequence()) {
+          for(auto it = config["user"]["authors"].begin(); it != config["user"]["authors"].end(); ++it) {
+            this->user_authors.push_back(it->as<std::string>());
+          }
+        } else {
+          WARN_BAD_FORMAT("user.authors", "a list containing strings");
+          return false;
+        }
+      } catch(YAML::BadConversion e) {
+        WARN_BAD_FORMAT("user.authors", "a list containing strings");
+        return false;
+      }
     } catch(YAML::Exception e) {
       std::cout<<"Config: Unknown exception:"<<std::endl;
       std::cout<<e.what()<<std::endl;

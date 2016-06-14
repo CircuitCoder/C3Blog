@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace C3 {
   class Config {
@@ -18,6 +19,9 @@ namespace C3 {
 
     // Security
     std::vector<std::string> security_origins;
+
+    // User
+    std::vector<std::string> user_authors;
   };
 
   Config read_config(const std::string &path);

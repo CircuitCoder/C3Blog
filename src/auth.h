@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+
+#include "config.h"
 namespace C3 {
   namespace Auth {
     enum class AuthError {
@@ -19,5 +21,6 @@ namespace C3 {
 
     bool isAuthor(const std::string &email);
     void addAuthor(const std::string &email);
+    void setupAuthors(const Config &c);
   }
 }

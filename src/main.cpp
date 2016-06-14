@@ -7,6 +7,7 @@
 #include "middleware.h"
 #include "util.h"
 #include "config.h"
+#include "auth.h"
 
 using namespace C3;
 
@@ -41,6 +42,7 @@ int main() {
 
   setup_middleware(c);
   setup_url_map();
+  Auth::setupAuthors(c);
 
   crow::App<crow::CookieParser, Middleware> app;
 
