@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(Boost_USE_MULTITHREADED ON)
 
+find_package(CURL REQUIRED)
 find_package(Boost 1.54.0 COMPONENTS system thread filesystem REQUIRED)
 find_package(LevelDB REQUIRED)
 find_package(Threads)
@@ -17,6 +18,7 @@ find_package(PkgConfig)
 
 pkg_search_module(YamlCPP REQUIRED yaml-cpp)
 
+include_directories(${CURL_INCLUDE})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${LevelDB_INCLUDE})
 include_directories(${YamlCPP_INCLUDE})
@@ -34,6 +36,7 @@ message(STATUS "Binary directory: ${C3Blog_BINARY_DIR}")
 
 add_executable(c3_blog ${SRC_LIST} ${HDR_LIST})
 
+target_link_libraries(c3_blog ${CURL_LIBRARIES})
 target_link_libraries(c3_blog ${Boost_LIBRARIES})
 target_link_libraries(c3_blog ${LevelDB_LIBRARIES})
 target_link_libraries(c3_blog ${YamlCPP_LIBRARIES})

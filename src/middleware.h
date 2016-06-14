@@ -3,20 +3,41 @@
 #include <crow.h>
 
 #include "config.h"
+#include "util.h"
+#include "auth.h"
 
 namespace C3 {
   std::string origins;
 
   struct Middleware {
-    struct context {};
+    struct context {
+      Auth::Session session;
+      std::string sid;
+      bool saveSession = false;
+    };
 
     Middleware() { }
 
-    void before_handle(crow::request &req, crow::response &res, context& ctx) {
+    template<typename AllContext>
+    void before_handle(crow::request &req, crow::response &res, context& ctx, AllContext &ctxs) {
       res.set_header("Access-Control-Allow-Origin", origins);
       res.set_header("Access-Control-Allow-Credentials", "true");
+
+      // Initial session
+      auto &pctx = ctxs.template get<crow::CookieParser>();
+      std::string sid = pctx.get_cookie("c3_sid");
+      if(sid == "") {
+        sid = random_chars(64);
+        pctx.set_cookie("c3_sid", sid);
+      }
+
+      ctx.sid = sid;
+      ctx.session = Auth::getSession(sid);
     }
-    void after_handle(crow::request &req, crow::response &res, context& ctx) { }
+
+    void after_handle(crow::request &req, crow::response &res, context& ctx) {
+      if(ctx.saveSession) saveSession(ctx.sid, ctx.session);
+    }
   };
 
   void setup_middleware(const Config &c) {

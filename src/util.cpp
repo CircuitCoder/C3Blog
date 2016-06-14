@@ -5,7 +5,7 @@
 #include "util.h"
 
 namespace C3 {
-  Randomizer::Randomizer(void) : mt(rd()) { }
+  Randomizer::Randomizer(uint64_t a, uint64_t b) : mt(rd()), dist(a,b) { }
 
   uint64_t Randomizer::next(void) {
     return dist(mt);
@@ -23,6 +23,16 @@ namespace C3 {
     std::string item;
     while(std::getline(ss, item, delim)) elems.push_back(item);
     return elems;
+  }
+
+  std::string charset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890");
+  Randomizer char_rand(0, 26*2 + 10-1);
+
+  std::string random_chars(int length) {
+    std::string result;
+    while(length --)
+      result.push_back(charset[char_rand.next()]);
+    return result;
   }
 
   namespace URLEncoding {

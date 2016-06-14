@@ -12,13 +12,15 @@ namespace C3 {
     std::uniform_int_distribution<uint64_t> dist;
 
     public:
-    Randomizer(void);
+    Randomizer(uint64_t a = 0, uint64_t b = std::numeric_limits<uint64_t>::max());
     uint64_t next(void);
   };
 
   uint64_t current_time(void);
 
   std::vector<std::string> split(const std::string &, char);
+
+  std::string random_chars(int length);
 
   namespace URLEncoding {
     std::string url_encode(std::string str);

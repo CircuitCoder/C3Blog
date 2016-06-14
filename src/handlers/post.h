@@ -7,13 +7,15 @@
 
 #include "storage.h"
 #include "mapper.h"
+#include "middleware.h"
 
 const int PPP = 10; // Post per page
 
-Json::FastWriter writer;
-Json::Reader reader;
-
 namespace C3 {
+  extern Json::FastWriter writer;
+
+  typedef crow::detail::context<crow::CookieParser, Middleware> context;
+
   void handle_post_list(const crow::request &req, crow::response &res);
   void handle_post_list_page(const crow::request &req, crow::response &res, int page);
   void handle_post_tag_list(const crow::request &req, crow::response &res, const std::string &tag);
@@ -118,6 +120,11 @@ namespace C3 {
 
   void handle_post_create(const crow::request &req, crow::response &res) {
     try {
+      // Context
+
+      context * ctx = (context *) req.middleware_context;
+      Middleware::context &cookieCtx = ctx->get<Middleware>();
+
       Post p(req.body, "unknown,dummy");
 
       if(has_url(p.url)) {

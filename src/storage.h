@@ -108,6 +108,7 @@ namespace C3 {
 
   typedef struct Post Post;
   typedef struct Comment Comment;
+  typedef struct User User;
 
   bool setup_storage(const std::string &dir);
   bool setup_url_map(void);

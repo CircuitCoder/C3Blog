@@ -17,7 +17,6 @@ void stop_handler(int s) {
   stop_storage();
 }
 
-
 int main() {
 
   struct sigaction sigIntHandler;
@@ -43,7 +42,7 @@ int main() {
   setup_middleware(c);
   setup_url_map();
 
-  crow::App<Middleware> app;
+  crow::App<crow::CookieParser, Middleware> app;
 
   auto posts_dispatcher = [](const crow::request &req, crow::response &res) -> void {
 
@@ -81,10 +80,10 @@ int main() {
 
   CROW_ROUTE(app, "/post/<string>").methods("GET"_method)(handle_post_read_url);
 
-  //TODO: /post/<string>
-
   CROW_ROUTE(app, "/tag/<string>").methods("GET"_method)(handle_post_tag_list);
   CROW_ROUTE(app, "/tag/<string>/<uint>").methods("GET"_method)(handle_post_tag_list_page);
+
+  CROW_ROUTE(app, "/account/login").methods("POST"_method)(handle_account_login);
 
   if(c.server_multithreaded) {
     app.port(c.server_port).multithreaded().run();
