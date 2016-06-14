@@ -29,7 +29,7 @@ namespace C3 {
 
     std::string token = body["token"].asString();
 
-    auto verifier = [token, &res]() -> void {
+    auto verifier = [token, &res, &req]() -> void {
       CURL *curl = curl_easy_init();
       if(curl) {
         // Using google for right now
@@ -74,10 +74,18 @@ namespace C3 {
 
         std::string email = jres["email"].asString();
 
+        context * ctx = (context *) req.middleware_context;
+        Middleware::context &cookieCtx = ctx->get<Middleware>();
+
+        cookieCtx.session.isAuthor = Auth::isAuthor(email);
+        cookieCtx.session.signedIn = true;
+        cookieCtx.session.uident = std::string("google,") + jres["sub"].asString();
+        cookieCtx.saveSession = true;
+
         Json::Value v;
 
         v["valid"] = true;
-        v["isAuthor"] = Auth::isAuthor(email);
+        v["isAuthor"] = cookieCtx.session.isAuthor;
 
         res.end(writer.write(v));
       } else {

@@ -124,8 +124,14 @@ namespace C3 {
 
       context * ctx = (context *) req.middleware_context;
       Middleware::context &cookieCtx = ctx->get<Middleware>();
+      
+      if(!(cookieCtx.session.signedIn && cookieCtx.session.isAuthor)) {
+        res.code = 403;
+        res.end("403 Forbidden");
+        return;
+      }
 
-      Post p(req.body, "unknown,dummy");
+      Post p(req.body, cookieCtx.session.uident);
 
       if(has_url(p.url)) {
         res.code = 200;
@@ -155,6 +161,16 @@ namespace C3 {
   }
 
   void handle_post_update(const crow::request &req, crow::response &res, uint64_t id) {
+
+    context * ctx = (context *) req.middleware_context;
+    Middleware::context &cookieCtx = ctx->get<Middleware>();
+    
+    if(!(cookieCtx.session.signedIn && cookieCtx.session.isAuthor)) {
+      res.code = 403;
+      res.end("403 Forbidden");
+      return;
+    }
+
     try {
       Post original = get_post(id);
       Post current(req.body);
@@ -213,6 +229,16 @@ namespace C3 {
   }
 
   void handle_post_delete(const crow::request &req, crow::response &res, uint64_t id) {
+
+    context * ctx = (context *) req.middleware_context;
+    Middleware::context &cookieCtx = ctx->get<Middleware>();
+    
+    if(!(cookieCtx.session.signedIn && cookieCtx.session.isAuthor)) {
+      res.code = 403;
+      res.end("403 Forbidden");
+      return;
+    }
+
     try {
       Post p = get_post(id);
 

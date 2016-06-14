@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
 
 #include "config.h"
 
@@ -12,10 +13,12 @@ namespace C3 {
     std::unordered_map<std::string, Session> sessions;
 
     void saveSession(const std::string &sid, const Session &s) {
+      std::cout<<"Save: "<<sid<<std::endl;
       sessions[sid] = s;
     }
 
     Session getSession(const std::string &sid) {
+      std::cout<<"Get: "<<sid<<std::endl;
       return sessions[sid]; // Creates if doesn't exists
     }
 

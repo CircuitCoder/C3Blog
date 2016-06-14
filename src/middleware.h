@@ -28,6 +28,7 @@ namespace C3 {
       std::string sid = pctx.get_cookie("c3_sid");
       if(sid == "") {
         sid = random_chars(64);
+        std::cout<<"Set cookie: "<<sid<<std::endl;
         pctx.set_cookie("c3_sid", sid);
       }
 
