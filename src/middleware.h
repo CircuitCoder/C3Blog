@@ -26,6 +26,7 @@ namespace C3 {
       res.set_header("Access-Control-Allow-Headers", req.get_header_value("Access-Control-Request-Headers"));
 
       if(req.method == "OPTIONS"_method) {
+        std::cout<<"OPTION"<<std::endl;
         res.end();
         return;
       }
@@ -33,13 +34,29 @@ namespace C3 {
       // Initial session
       auto &pctx = ctxs.template get<crow::CookieParser>();
       std::string sid = pctx.get_cookie("c3_sid");
-      if(sid == "") {
+
+      bool newSession = sid == "";
+
+      if(!newSession) {
+        try {
+          ctx.session = Auth::getSession(sid);
+        } catch(Auth::AuthError e) {
+          if(e == Auth::AuthError::NotSignedIn) newSession = true;
+          else throw;
+        }
+      }
+
+      std::cout<<sid<<std::endl;
+
+      if(newSession) {
+        // Renew sid
         sid = random_chars(64);
-        pctx.set_cookie("c3_sid", sid);
+        pctx.set_cookie("c3_sid", sid + "; Path=/");
+        std::cout<<sid<<std::endl;
+        ctx.saveSession = true;
       }
 
       ctx.sid = sid;
-      ctx.session = Auth::getSession(sid);
     }
 
     void after_handle(crow::request &req, crow::response &res, context& ctx) {

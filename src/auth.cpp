@@ -17,7 +17,11 @@ namespace C3 {
     }
 
     Session getSession(const std::string &sid) {
-      return sessions[sid]; // Creates if doesn't exists
+      try {
+        return sessions.at(sid);
+      } catch(std::out_of_range e) {
+        throw AuthError::NotSignedIn;
+      }
     }
 
     bool isAuthor(const std::string &email) {
