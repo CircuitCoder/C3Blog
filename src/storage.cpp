@@ -284,10 +284,10 @@ namespace C3 {
   }
 
   uint64_t add_post(const Post &post) {
-    // Using nanoseconds since Unix Epoch as post id
+    // Using milliseconds since Unix Epoch as post id
     uint64_t ts = post.post_time;
     
-    //Assume that we can't submit two post at the same nanosecond
+    //Assume that we can't submit two post at the same millisecond 
     //TODO: upate tags and indexes
     leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(ts), post.to_json());
     if(s.ok()) return ts;

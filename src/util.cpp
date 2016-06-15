@@ -12,7 +12,7 @@ namespace C3 {
   }
 
   uint64_t current_time(void) {
-    return std::chrono::duration_cast<std::chrono::duration<uint64_t, std::nano>>
+    return std::chrono::duration_cast<std::chrono::duration<uint64_t, std::milli>>
       (std::chrono::system_clock::now().time_since_epoch()).count();
   }
 

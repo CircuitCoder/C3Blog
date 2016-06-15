@@ -26,7 +26,6 @@ namespace C3 {
       res.set_header("Access-Control-Allow-Headers", req.get_header_value("Access-Control-Request-Headers"));
 
       if(req.method == "OPTIONS"_method) {
-        std::cout<<"OPTION"<<std::endl;
         res.end();
         return;
       }
@@ -45,8 +44,6 @@ namespace C3 {
           else throw;
         }
       }
-
-      std::cout<<sid<<std::endl;
 
       if(newSession) {
         // Renew sid
