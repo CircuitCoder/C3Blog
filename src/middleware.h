@@ -56,7 +56,6 @@ namespace C3 {
         // Renew sid
         sid = random_chars(64);
         pctx.set_cookie("c3_sid", sid + "; Path=/");
-        std::cout<<sid<<std::endl;
         ctx.saveSession = true;
       }
 
