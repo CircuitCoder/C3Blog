@@ -2,12 +2,15 @@
 
 #include <crow.h>
 
+#include <unordered_set>
+
 #include "config.h"
 #include "util.h"
 #include "auth.h"
 
 namespace C3 {
-  std::string origins;
+
+  std::unordered_set<std::string> middleware_origins;
 
   struct Middleware {
     struct context {
@@ -20,7 +23,11 @@ namespace C3 {
 
     template<typename AllContext>
     void before_handle(crow::request &req, crow::response &res, context& ctx, AllContext &ctxs) {
-      res.set_header("Access-Control-Allow-Origin", origins);
+
+      std::string origin = req.get_header_value("Origin");
+      if(origin.length() > 0 && middleware_origins.count(origin) > 0)
+        res.set_header("Access-Control-Allow-Origin", origin);
+
       res.set_header("Access-Control-Allow-Credentials", "true");
       res.set_header("Access-Control-Allow-Methods", req.get_header_value("Access-Control-Request-Method"));
       res.set_header("Access-Control-Allow-Headers", req.get_header_value("Access-Control-Request-Headers"));
@@ -62,13 +69,7 @@ namespace C3 {
   };
 
   void setup_middleware(const Config &c) {
-    std::stringstream originsStream;
-
-    for(size_t i = 0; i < c.security_origins.size(); ++i) {
-      originsStream<<c.security_origins[i];
-      if(i != c.security_origins.size() -1) originsStream<<',';
-    }
-
-    origins = originsStream.str();
+    middleware_origins.clear();
+    middleware_origins.insert(c.security_origins.begin(), c.security_origins.end());
   }
 }
