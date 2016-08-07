@@ -71,4 +71,6 @@ namespace C3 {
     middleware_origins.clear();
     middleware_origins.insert(c.security_origins.begin(), c.security_origins.end());
   }
+
+  typedef crow::detail::context<crow::CookieParser, Middleware> context;
 }

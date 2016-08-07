@@ -14,8 +14,6 @@ const int PPP = 10; // Post per page
 namespace C3 {
   extern Json::FastWriter writer;
 
-  typedef crow::detail::context<crow::CookieParser, Middleware> context;
-
   void handle_post_list(const crow::request &req, crow::response &res);
   void handle_post_list_page(const crow::request &req, crow::response &res, int page);
   void handle_post_tag_list(const crow::request &req, crow::response &res, const std::string &tag);
