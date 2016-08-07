@@ -10,3 +10,9 @@
 #include "handlers/comment.h"
 #include "handlers/search.h"
 */
+
+namespace C3 {
+  void setup_handlers(const Config &c) {
+    setup_post_handler(c);
+  }
+}

@@ -40,6 +40,7 @@ int main() {
     return -1;
   }
 
+  setup_handlers(c);
   setup_middleware(c);
   setup_url_map();
   Auth::setupAuthors(c);

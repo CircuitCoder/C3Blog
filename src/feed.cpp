@@ -26,7 +26,7 @@ namespace C3 {
       return ss.str();
     }
 
-    void setup(Config &c) {
+    void setup(const Config &c) {
       feed_length = c.app_feedLength;
       title = c.app_title;
       url = c.app_url;

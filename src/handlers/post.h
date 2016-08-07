@@ -8,11 +8,16 @@
 #include "storage.h"
 #include "mapper.h"
 #include "middleware.h"
-
-const int PPP = 10; // Post per page
+#include "config.h"
 
 namespace C3 {
+
+  int post_per_page = 10; // Post per page
   extern Json::FastWriter writer;
+
+  void setup_post_handler(const Config &c) {
+    post_per_page = c.app_pageLength;
+  }
 
   void handle_post_list(const crow::request &req, crow::response &res);
   void handle_post_list_page(const crow::request &req, crow::response &res, int page);
@@ -29,8 +34,8 @@ namespace C3 {
   }
 
   void handle_post_list_page(const crow::request &req, crow::response &res, int page) {
-    int offset = (page-1) * PPP;
-    int count = PPP;
+    int offset = (page-1) * post_per_page;
+    int count = post_per_page;
 
     bool hasNext;
 
@@ -58,8 +63,8 @@ namespace C3 {
   }
 
   void handle_post_tag_list_page(const crow::request &req, crow::response &res, const std::string &tag, int page) {
-    int offset = (page-1) * PPP;
-    int count = PPP;
+    int offset = (page-1) * post_per_page;
+    int count = post_per_page;
 
     bool hasNext;
 

@@ -4,7 +4,7 @@
 
 namespace C3 {
   namespace Feed {
-    void setup(Config &c);
+    void setup(const Config &c);
     void update(void);
     std::string fetch(void);
   }
