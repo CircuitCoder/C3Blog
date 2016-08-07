@@ -43,6 +43,7 @@ int main() {
   setup_middleware(c);
   setup_url_map();
   Auth::setupAuthors(c);
+  Feed::setup(c);
 
   crow::App<crow::CookieParser, Middleware> app;
 
@@ -81,6 +82,8 @@ int main() {
 
   CROW_ROUTE(app, "/account/login").methods("POST"_method)(handle_account_login);
   CROW_ROUTE(app, "/account/logout").methods("POST"_method)(handle_account_logout);
+
+  CROW_ROUTE(app, "/feed").methods("GET"_method)(handle_feed);
 
   if(c.server_multithreaded) {
     app.port(c.server_port).multithreaded().run();

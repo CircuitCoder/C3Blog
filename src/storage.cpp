@@ -333,7 +333,7 @@ namespace C3 {
 
     while(it->Valid() && offset-- > 0) it->Next();
 
-    for(int i = 0; i < count && it->Valid(); ++i) {
+    for(int i = 0; (count == -1 || i < count) && it->Valid(); ++i) {
       result.push_back(Post(it->value().ToString()));
       it->Next();
     }
@@ -381,7 +381,7 @@ namespace C3 {
     std::list<uint64_t> result;
     while(it->Valid() && offset-- > 0) it->Next();
 
-    for(int i = 0; i < count && it->Valid() && _entryEquals(it->key().ToString(), entry); ++i) {
+    for(int i = 0; (count == -1 || i < count) && it->Valid() && _entryEquals(it->key().ToString(), entry); ++i) {
       result.push_back(std::stoull(it->value().ToString()));
       it->Next();
     }

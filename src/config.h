@@ -10,6 +10,12 @@ namespace C3 {
 
     bool read(const std::string &path);
 
+    // App
+    std::string app_title;
+    std::string app_url;
+    uint16_t app_feedLength;
+    uint16_t app_pageLength;
+
     // Server
     uint16_t server_port;
     bool server_multithreaded;

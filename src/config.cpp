@@ -6,6 +6,29 @@
 #include "config.h"
 
 #define WARN_BAD_FORMAT(ident,expected) std::cout<<"Config: Bad format. "<<ident<<" should be "<<expected<<"."<<std::endl;
+#define READ_CONFIG(ident,source,target,type,expected) \
+  try { \
+    this->target = config source.as<type>(); \
+  } catch(YAML::BadConversion e) { \
+    WARN_BAD_FORMAT(ident, expected); \
+    return false; \
+  }
+
+#define READ_SEQUENCE(ident,source,target,type,expected) \
+  try { \
+    if(config source.IsSequence()) { \
+      for(auto it = config source.begin(); it != config source.end(); ++it) { \
+        this->target.push_back(it->as<type>()); \
+      } \
+    } else { \
+      WARN_BAD_FORMAT(ident, "a list containing expected"); \
+      return false; \
+    } \
+  } catch(YAML::BadConversion e) { \
+    WARN_BAD_FORMAT(ident, "a list containing expected"); \
+    return false; \
+  } \
+
 
 namespace C3 {
   Config::Config() { }
@@ -20,54 +43,20 @@ namespace C3 {
         return false;
       }
 
-      try {
-        this->server_port = config["server"]["port"].as<uint16_t>();
-      } catch(YAML::BadConversion e) {
-        WARN_BAD_FORMAT("server.port", "an integer");
-        return false;
-      }
+      READ_CONFIG("app.title", ["app"]["title"], app_title, std::string, "a string");
+      READ_CONFIG("app.url", ["app"]["url"], app_url, std::string, "a string");
+      READ_CONFIG("app.feed_length", ["app"]["feed_length"], app_feedLength, uint16_t, "a integer");
+      READ_CONFIG("app.page_length", ["app"]["page_length"], app_pageLength, uint16_t, "a integer");
 
-      try {
-        this->server_multithreaded = config["server"]["multithreaded"].as<bool>();
-      } catch(YAML::BadConversion e) {
-        WARN_BAD_FORMAT("server.multithreaded", "a boolean");
-        return false;
-      }
+      READ_CONFIG("server.port", ["server"]["port"], server_port, uint16_t, "an integer");
+      READ_CONFIG("server.multithreaded", ["server"]["multithreaded"], server_multithreaded, bool, "a boolean");
 
-      try {
-        this->db_path = config["db"]["path"].as<std::string>();
-      } catch(YAML::BadConversion e) {
-        WARN_BAD_FORMAT("db.path", "a string");
-        return false;
-      }
+      READ_CONFIG("db.path", ["db"]["path"], db_path, std::string, "a string");
 
-      try {
-        if(config["security"]["origins"].IsSequence()) {
-          for(auto it = config["security"]["origins"].begin(); it != config["security"]["origins"].end(); ++it) {
-            this->security_origins.push_back(it->as<std::string>());
-          }
-        } else {
-          WARN_BAD_FORMAT("security.origins", "a list containing strings");
-          return false;
-        }
-      } catch(YAML::BadConversion e) {
-        WARN_BAD_FORMAT("security.origins", "a list containing strings");
-        return false;
-      }
+      READ_SEQUENCE("security.origins", ["security"]["origins"], security_origins, std::string, "strings");
 
-      try {
-        if(config["user"]["authors"].IsSequence()) {
-          for(auto it = config["user"]["authors"].begin(); it != config["user"]["authors"].end(); ++it) {
-            this->user_authors.push_back(it->as<std::string>());
-          }
-        } else {
-          WARN_BAD_FORMAT("user.authors", "a list containing strings");
-          return false;
-        }
-      } catch(YAML::BadConversion e) {
-        WARN_BAD_FORMAT("user.authors", "a list containing strings");
-        return false;
-      }
+      READ_SEQUENCE("user.authors", ["user"]["authors"], user_authors, std::string, "strings");
+
     } catch(YAML::Exception e) {
       std::cout<<"Config: Unknown exception:"<<std::endl;
       std::cout<<e.what()<<std::endl;
