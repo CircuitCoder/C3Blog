@@ -65,7 +65,7 @@ namespace C3 {
         auto entry_e = doc.NewElement("entry");
         
         auto entry_id_e = doc.NewElement("id");
-        entry_id_e->SetText((url + "/" + i->url).c_str());
+        entry_id_e->SetText((url + "[" + std::to_string(i->post_time) + "]").c_str());
         entry_e->InsertEndChild(entry_id_e);
 
         auto entry_title_e = doc.NewElement("title");
