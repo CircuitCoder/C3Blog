@@ -46,8 +46,9 @@ namespace C3 {
     if(mkd_compile(doc, flags)) {
       char * buf;
       int szdoc = mkd_document(doc, &buf);
+      std::string result(buf);
       mkd_cleanup(doc);
-      return std::string(buf);
+      return result;
     } else {
       throw "Conversion Failed";
     }
