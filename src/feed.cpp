@@ -22,7 +22,7 @@ namespace C3 {
       std::tm *cal = gmtime(&tt);
 
       std::stringstream ss;
-      ss<<cal->tm_year + 1900<<'-'<<cal->tm_mon<<'-'<<cal->tm_mday<<'T'<<cal->tm_hour<<':'<<cal->tm_min<<':'<<cal->tm_sec<<'Z';
+      ss<<cal->tm_year + 1900<<'-'<<cal->tm_mon + 1<<'-'<<cal->tm_mday<<'T'<<cal->tm_hour<<':'<<cal->tm_min<<':'<<cal->tm_sec<<'Z';
       return ss.str();
     }
 
