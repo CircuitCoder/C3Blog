@@ -86,6 +86,10 @@ namespace C3 {
         entry_link_e->SetAttribute("rel", "alternative");
         entry_e->InsertEndChild(entry_link_e);
 
+        auto entry_link_fb = doc.NewElement("link");
+        entry_link_fb->SetText((url + "/" + i->url).c_str());
+        entry_e->InsertEndChild(entry_link_fb);
+
         root->InsertEndChild(entry_e);
       }
 
