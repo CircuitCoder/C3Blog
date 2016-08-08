@@ -86,6 +86,8 @@ int main() {
 
   CROW_ROUTE(app, "/feed").methods("GET"_method)(handle_feed);
 
+  crow::logger::setLogLevel(crow::LogLevel::WARNING);
+
   if(c.server_multithreaded) {
     app.port(c.server_port).multithreaded().run();
   } else {
