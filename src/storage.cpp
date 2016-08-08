@@ -47,8 +47,9 @@ namespace C3 {
       const std::string &topic,
       const std::string &content,
       const std::vector<std::string> &tags,
-      uint64_t post_time) :
-        uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time) {}
+      uint64_t post_time,
+      uint64_t update_time) :
+        uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time), update_time(update_time) {}
 
   Post::Post(const std::string &json) {
     Json::Value r;
@@ -65,6 +66,10 @@ namespace C3 {
     content = r["content"].asString();
     this->tags = tags;
     post_time = r["post_time"].asUInt64();
+    update_time = r["update_time"].asUInt64();
+
+    // Not updated yet. For backward compatibility
+    if(update_time == 0) update_time = post_time;
   }
 
   Post::Post(const std::string &json, const std::string &uident) :
@@ -81,6 +86,7 @@ namespace C3 {
     topic = r["topic"].asString();
     content = r["content"].asString();
     this->tags = tags;
+    this->update_time = this->post_time;
   }
 
   std::string Post::to_json(void) const {
@@ -90,6 +96,7 @@ namespace C3 {
     r["topic"] = topic;
     r["content"] = content;
     r["post_time"] = (Json::UInt64) post_time;
+    r["update_time"] = (Json::UInt64) update_time;
     Json::Value v;
     for(auto e : tags) v.append(e);
     r["tags"] = v;
@@ -288,7 +295,6 @@ namespace C3 {
     uint64_t ts = post.post_time;
     
     //Assume that we can't submit two post at the same millisecond 
-    //TODO: upate tags and indexes
     leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(ts), post.to_json());
     if(s.ok()) return ts;
     else {
@@ -312,8 +318,11 @@ namespace C3 {
 
   void update_post(const uint64_t &id, const Post &post) {
     if(!(post.post_time == id)) throw IDMismatch;
-    //TODO: upate tags and indexes
-    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(id), post.to_json());
+
+    // TODO: use r-value reference
+    Post np = post;
+    np.update_time = current_time();
+    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), std::to_string(id), np.to_json());
     if(!s.ok()) throw s;
   }
   

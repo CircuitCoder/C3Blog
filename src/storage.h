@@ -24,6 +24,7 @@ namespace C3 {
     std::vector<std::string> tags;
 
     uint64_t post_time;
+    uint64_t update_time;
 
     Post(
         const std::string &uident,
@@ -31,7 +32,8 @@ namespace C3 {
         const std::string &topic,
         const std::string &content,
         const std::vector<std::string> &tags,
-        uint64_t post_time);
+        uint64_t post_time,
+        uint64_t update_time);
 
     Post(const std::string &json);
 

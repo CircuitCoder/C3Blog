@@ -73,7 +73,7 @@ namespace C3 {
         entry_e->InsertEndChild(entry_title_e);
 
         auto entry_updated_e = doc.NewElement("updated");
-        entry_updated_e->SetText(generate_rfc3999(i->post_time).c_str());
+        entry_updated_e->SetText(generate_rfc3999(i->update_time).c_str());
         entry_e->InsertEndChild(entry_updated_e);
 
         auto entry_link_e = doc.NewElement("link");
