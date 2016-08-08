@@ -9,6 +9,7 @@
 #include "mapper.h"
 #include "middleware.h"
 #include "config.h"
+#include "../feed.h"
 
 namespace C3 {
 
@@ -154,6 +155,8 @@ namespace C3 {
       //TODO: batch
       add_entries(id, tags);
 
+      Feed::update();
+
       Json::Value v;
       v["id"] = (Json::UInt64) id;
       res.end(writer.write(v));
@@ -216,6 +219,8 @@ namespace C3 {
       add_remove_entries(id, added, removed);
       update_post(id, Post(req.body));
 
+      Feed::update();
+
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
       if(e == IDMismatch) {
@@ -250,6 +255,8 @@ namespace C3 {
       std::list<std::string> tags(p.tags.begin(), p.tags.end());
       remove_entries(id, tags);
       delete_post(id);
+
+      Feed::update();
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
