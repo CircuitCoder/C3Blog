@@ -2,6 +2,10 @@
 #include <sstream>
 #include <chrono>
 
+extern "C" {
+#include <mkdio.h>
+}
+
 #include "util.h"
 
 namespace C3 {
@@ -33,6 +37,20 @@ namespace C3 {
     while(length --)
       result.push_back(charset[char_rand.next()]);
     return result;
+  }
+
+  std::string markdown(std::string src) {
+    auto flags = MKD_AUTOLINK;
+    auto doc = mkd_string(src.c_str(), src.length(), flags);
+
+    if(mkd_compile(doc, flags)) {
+      char * buf;
+      int szdoc = mkd_document(doc, &buf);
+      mkd_cleanup(doc);
+      return std::string(buf);
+    } else {
+      throw "Conversion Failed";
+    }
   }
 
   namespace URLEncoding {

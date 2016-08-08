@@ -20,7 +20,9 @@ namespace C3 {
 
   std::vector<std::string> split(const std::string &, char);
 
-  std::string random_chars(int length);
+  std::string random_chars(int);
+
+  std::string markdown(std::string);
 
   namespace URLEncoding {
     std::string url_encode(std::string str);
