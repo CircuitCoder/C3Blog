@@ -1,5 +1,6 @@
-#include <string>
+#pragma once
 
+#include <string>
 #include "config.h"
 
 namespace C3 {
