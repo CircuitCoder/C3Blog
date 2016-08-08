@@ -72,6 +72,11 @@ namespace C3 {
         entry_title_e->SetText(i->topic.c_str());
         entry_e->InsertEndChild(entry_title_e);
 
+        auto entry_content_e = doc.NewElement("content");
+        entry_content_e->SetText(markdown(i->content).c_str());
+        entry_content_e->SetAttribute("type", "html");
+        entry_e->InsertEndChild(entry_content_e);
+
         auto entry_updated_e = doc.NewElement("updated");
         entry_updated_e->SetText(generate_rfc3999(i->update_time).c_str());
         entry_e->InsertEndChild(entry_updated_e);
