@@ -17,7 +17,7 @@ find_library(Discount_LIBRARY NAMES markdown
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Discount DEFAULT_MSG Discount_INCLUDE Discount_LIBRARY)
 
-if(Discount_FOUND)
+if(DISCOUNT_FOUND)
   message(STATUS "Found Discount (include: ${Discount_INCLUDE}, library: ${Discount_LIBRARY})")
   set(Discount_INCLUDES ${Discount_INCLUDE})
   set(Discount_LIBRARIES ${Discount_LIBRARY})
