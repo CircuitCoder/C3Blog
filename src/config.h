@@ -22,6 +22,7 @@ namespace C3 {
 
     // Database
     std::string db_path;
+    uint64_t db_cache;
 
     // Security
     std::vector<std::string> security_origins;

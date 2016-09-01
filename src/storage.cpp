@@ -7,9 +7,19 @@
 #include <cstdarg>
 #include <chrono>
 #include <leveldb/db.h>
+#include <leveldb/cache.h>
 #include <leveldb/write_batch.h>
 #include <json/json.h>
 #include <boost/filesystem.hpp>
+
+#define INIT_DB(db) \
+    leveldb::Options db##Opt; \
+    db##Opt.create_if_missing = true; \
+    db##Opt.comparator = &db##Cmp; \
+    db##Opt.block_cache = cachePtr; \
+    \
+    leveldb::Status db##Status = leveldb::DB::Open(db##Opt, dir + "/" #db, &db##DB); \
+    assert(db##Status.ok()); \
 
 namespace C3 {
 
@@ -207,7 +217,7 @@ namespace C3 {
 
   void CommaSepComparator::FindShortSuccessor(std::string *) const { }
 
-  bool setup_storage(const std::string &dir) {
+  bool setup_storage(const std::string &dir, uint64_t cache) {
     // Ckeck if the folder exists
 
     boost::filesystem::path dbpath(dir);
@@ -233,36 +243,14 @@ namespace C3 {
       return false;
     }
 
-    // TODO: cache
+    leveldb::Cache *cachePtr = cache > 0 ? leveldb::NewLRUCache(cache) : NULL;
+
     std::cout<<"Storage: Opening db at "<<dir<<std::endl;
 
-    leveldb::Options postOpt;
-    postOpt.create_if_missing = true;
-    postOpt.comparator = &postCmp;
-
-    leveldb::Status postStatus = leveldb::DB::Open(postOpt, dir + "/post", &postDB);
-    assert(postStatus.ok());
-
-    leveldb::Options indexOpt;
-    indexOpt.create_if_missing = true;
-    indexOpt.comparator = &indexCmp;
-
-    leveldb::Status indexStatus = leveldb::DB::Open(indexOpt, dir + "/index", &indexDB);
-    assert(indexStatus.ok());
-
-    leveldb::Options commentOpt;
-    commentOpt.create_if_missing = true;
-    commentOpt.comparator = &commentCmp;
-
-    leveldb::Status commentStatus = leveldb::DB::Open(commentOpt, dir + "/comment", &commentDB);
-    assert(commentStatus.ok());
-
-    leveldb::Options entryOpt;
-    entryOpt.create_if_missing = true;
-    entryOpt.comparator = &entryCmp;
-
-    leveldb::Status entryStatus = leveldb::DB::Open(entryOpt, dir + "/entry", &entryDB);
-    assert(entryStatus.ok());
+    INIT_DB(post);
+    INIT_DB(index);
+    INIT_DB(comment);
+    INIT_DB(entry);
 
     return true;
   }

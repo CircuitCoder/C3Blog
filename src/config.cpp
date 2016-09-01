@@ -52,6 +52,7 @@ namespace C3 {
       READ_CONFIG("server.multithreaded", ["server"]["multithreaded"], server_multithreaded, bool, "a boolean");
 
       READ_CONFIG("db.path", ["db"]["path"], db_path, std::string, "a string");
+      READ_CONFIG("db.cache", ["db"]["cache"], db_cache, uint64_t, "an integer");
 
       READ_SEQUENCE("security.origins", ["security"]["origins"], security_origins, std::string, "strings");
 

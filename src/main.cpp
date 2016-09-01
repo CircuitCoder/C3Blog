@@ -46,7 +46,7 @@ int main() {
     return -1;
   }
 
-  if(!setup_storage(c.db_path)) {
+  if(!setup_storage(c.db_path, c.db_cache)) {
     std::cout<<"Failed to initialize storage. Aborting."<<std::endl;
     return -1;
   }

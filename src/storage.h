@@ -112,7 +112,7 @@ namespace C3 {
   typedef struct Comment Comment;
   typedef struct User User;
 
-  bool setup_storage(const std::string &dir);
+  bool setup_storage(const std::string &dir, uint64_t cache);
   bool setup_url_map(void);
   void stop_storage(void);
 
