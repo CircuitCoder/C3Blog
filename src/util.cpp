@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <sstream>
 #include <chrono>
+#include <memory>
 
 extern "C" {
 #include <mkdio.h>
@@ -52,6 +53,13 @@ namespace C3 {
     } else {
       throw "Conversion Failed";
     }
+  }
+
+  bool parseFromString(const Json::CharReaderBuilder &rb, const std::string &str, Json::Value *v) {
+    const std::unique_ptr<Json::CharReader> rd(rb.newCharReader());
+    const char *b = str.c_str();
+    const char *e = b + str.size();
+    return rd->parse(b, e, v, NULL);
   }
 
   namespace URLEncoding {

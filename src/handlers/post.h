@@ -14,7 +14,7 @@
 namespace C3 {
 
   int post_per_page = 10; // Post per page
-  extern Json::FastWriter writer;
+  extern Json::StreamWriterBuilder wbuilder;
 
   void setup_post_handler(const Config &c) {
     post_per_page = c.app_pageLength;
@@ -56,7 +56,7 @@ namespace C3 {
     v["posts"] = posts;
     v["hasNext"] = hasNext;
 
-    res.end(writer.write(v));
+    res.end(Json::writeString(wbuilder, v));
   }
 
   void handle_post_tag_list(const crow::request &req, crow::response &res, const std::string &tag) {
@@ -86,7 +86,7 @@ namespace C3 {
     v["posts"] = posts;
     v["hasNext"] = hasNext;
 
-    res.end(writer.write(v));
+    res.end(Json::writeString(wbuilder, v));
   }
 
   void handle_post_read(const crow::request &req, crow::response &res, uint64_t id) {
@@ -159,7 +159,7 @@ namespace C3 {
 
       Json::Value v;
       v["id"] = (Json::UInt64) id;
-      res.end(writer.write(v));
+      res.end(Json::writeString(wbuilder, v));
     } catch(...) {
       res.code = 500;
       res.end("500 Internal Error");

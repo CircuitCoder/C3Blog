@@ -18,6 +18,17 @@ void stop_handler(int s) {
   stop_storage();
 }
 
+namespace C3 {
+  extern Json::StreamWriterBuilder wbuilder;
+  extern Json::CharReaderBuilder rbuilder;
+}
+
+void setup_globals() {
+  rbuilder["collectComments"] = false;
+  wbuilder["commentStyle"] = "None";
+  wbuilder["indentation"] = "";
+}
+
 int main() {
 
   struct sigaction sigIntHandler;
@@ -40,6 +51,7 @@ int main() {
     return -1;
   }
 
+  setup_globals();
   setup_handlers(c);
   setup_middleware(c);
   setup_url_map();

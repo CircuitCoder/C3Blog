@@ -6,11 +6,12 @@
 #include <thread>
 
 #include "auth.h"
+#include "util.h"
 
 namespace C3 {
 
-  extern Json::FastWriter writer;
-  extern Json::Reader reader;
+  extern Json::StreamWriterBuilder wbuilder;
+  extern Json::CharReaderBuilder rbuilder;
 
   const std::string baseurl = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=";
 
@@ -22,7 +23,7 @@ namespace C3 {
   void handle_account_login(const crow::request &req, crow::response &res) {
 
     Json::Value body;
-    if(!reader.parse(req.body, body)
+    if(!parseFromString(rbuilder, req.body, &body)
         || !body.isObject()
         || !body.isMember("token")
         || !body["token"].isString()
@@ -45,7 +46,7 @@ namespace C3 {
 
       v["valid"] = true;
       v["isAuthor"] = cookieCtx.session.isAuthor;
-      res.end(writer.write(v));
+      res.end(Json::writeString(wbuilder, v));
       return;
     }
 
@@ -74,7 +75,7 @@ namespace C3 {
         // No user database for right now
 
         Json::Value jres;
-        if(!reader.parse(buf, jres) || !jres.isObject()) {
+        if(!parseFromString(rbuilder, buf, &jres) || !jres.isObject()) {
           res.code = 500;
           res.end("500 Internal Error");
           return;
@@ -110,7 +111,7 @@ namespace C3 {
         v["valid"] = true;
         v["isAuthor"] = cookieCtx.session.isAuthor;
 
-        res.end(writer.write(v));
+        res.end(Json::writeString(wbuilder, v));
       } else {
         res.code = 500;
         res.end("500 Internal Error");

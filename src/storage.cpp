@@ -13,6 +13,9 @@
 
 namespace C3 {
 
+  extern Json::StreamWriterBuilder wbuilder;
+  extern Json::CharReaderBuilder rbuilder;
+
   bool _entryEquals(const std::string &entry, const std::string &key) {
     auto eit = entry.begin();
     auto kit = key.begin();
@@ -38,9 +41,6 @@ namespace C3 {
   leveldb::DB *commentDB;
   leveldb::DB *entryDB;
 
-  Json::Reader reader;
-  Json::FastWriter writer;
-
   Post::Post(
       const std::string &uident,
       const std::string &url,
@@ -53,7 +53,7 @@ namespace C3 {
 
   Post::Post(const std::string &json) {
     Json::Value r;
-    if(!reader.parse(json, r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
 
     std::vector<std::string> tags(r["tags"].size());
     for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
@@ -75,7 +75,7 @@ namespace C3 {
   Post::Post(const std::string &json, const std::string &uident) :
         uident(uident), post_time(current_time()) {
     Json::Value r;
-    if(!reader.parse(json, r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
 
     std::vector<std::string> tags(r["tags"].size());
     for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
@@ -101,7 +101,7 @@ namespace C3 {
     for(auto e : tags) v.append(e);
     r["tags"] = v;
 
-    return writer.write(r);
+    return Json::writeString(wbuilder, r);
   }
 
   Comment::Comment(
@@ -112,7 +112,7 @@ namespace C3 {
 
   Comment::Comment(const std::string &json) {
     Json::Value r;
-    if(!reader.parse(json, r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
 
     uident = r["uident"].asString();
     content = r["content"].asString();
@@ -122,7 +122,7 @@ namespace C3 {
   Comment::Comment(const std::string &json, const std::string &uident) :
         uident(uident), comment_time(current_time()) {
     Json::Value r;
-    if(!reader.parse(json, r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
 
     content = r["content"].asString();
   }
@@ -132,7 +132,7 @@ namespace C3 {
     r["uident"] = uident;
     r["content"] = content;
 
-    return writer.write(r);
+    return Json::writeString(wbuilder, r);
   }
 
   User::User(
@@ -145,7 +145,7 @@ namespace C3 {
 
   User::User(const std::string &json) {
     Json::Value r;
-    if(!reader.parse(json, r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
 
     // Type
     std::string typestr = r["type"].asString();
@@ -168,7 +168,7 @@ namespace C3 {
     r["email"] = email;
     r["avatar"] = avatar;
 
-    return writer.write(r);
+    return Json::writeString(wbuilder, r);
   }
 
   CommaSepComparator::CommaSepComparator(std::initializer_list<Limitor> lims) :
