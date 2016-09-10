@@ -7,11 +7,34 @@
 
 #include "auth.h"
 #include "util.h"
+#include "config.h"
 
 namespace C3 {
 
   extern Json::StreamWriterBuilder wbuilder;
   extern Json::CharReaderBuilder rbuilder;
+
+  // 0 for none
+  // 1 for http
+  // 2 for socks4
+  // 3 for socks5
+  uint8_t proxy_type = 0;
+  std::string proxy;
+
+  void setup_account_handler(const Config &c) {
+    if(c.proxy.compare(0, 9, "socks4://") == 0) {
+      proxy = c.proxy.substr(9);
+      proxy_type = 2;
+    } else if(c.proxy.compare(0, 9, "socks5://") == 0) {
+      proxy = c.proxy.substr(9);
+      proxy_type = 3;
+    } else if(c.proxy.compare(0, 7, "http://") == 0) {
+      proxy = c.proxy.substr(7);
+      proxy_type = 1;
+    }
+
+    CROW_LOG_INFO << "Using proxy: " << proxy;
+  }
 
   const std::string baseurl = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=";
 
@@ -61,6 +84,13 @@ namespace C3 {
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
 
+        if(proxy_type != 0) {
+          curl_easy_setopt(curl, CURLOPT_PROXY, proxy.c_str());
+          if(proxy_type == 1) curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+          else if(proxy_type == 2) curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);
+          else if(proxy_type == 3) curl_easy_setopt(curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+        }
+
         CURLcode cres = curl_easy_perform(curl);
 
         if(cres != CURLE_OK) {
@@ -100,6 +130,18 @@ namespace C3 {
         }
 
         std::string email = jres["email"].asString();
+
+        User u(User::UserType::uGoogle,
+            sub,
+            jres.isMember("name") && jres["name"].isString() ? jres["name"].asString() : "",
+            email,
+            jres.isMember("picture") && jres["picture"].isString() ? jres["picture"].asString() : "");
+
+        if(!update_user(u)) {
+          res.code = 500;
+          res.end("{\"error_description\":\"Unable to update your account\"}");
+          return;
+        }
 
         cookieCtx.session.isAuthor = Auth::isAuthor(email);
         cookieCtx.session.signedIn = true;

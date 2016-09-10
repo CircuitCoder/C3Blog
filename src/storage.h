@@ -6,11 +6,12 @@
 #include <list>
 #include <leveldb/db.h>
 #include <leveldb/comparator.h>
+#include <json/json.h>
 
 #include "util.h"
 
 namespace C3 {
-  enum StorageExcept {
+  enum class StorageExcept {
     NotFound = 0,
     ParseError = 1,
     IDMismatch = 2
@@ -40,6 +41,7 @@ namespace C3 {
     Post(const std::string &json, const std::string &uident);
 
     std::string to_json(void) const;
+    Json::Value to_json_obj(void) const;
   };
 
   struct Comment {
@@ -58,10 +60,11 @@ namespace C3 {
     Comment(const std::string &json, const std::string &uident);
 
     std::string to_json(void) const;
+    Json::Value to_json_obj(void) const;
   };
 
   struct User {
-    enum UserType {
+    enum class UserType {
       uGoogle, // Currently only support google login
       uUnknown
     };
@@ -83,9 +86,10 @@ namespace C3 {
     User(const std::string &json);
 
     std::string to_json(void) const;
+    Json::Value to_json_obj(void) const;
 
     std::string getKey(void) const {
-      if(type == uGoogle)
+      if(type == UserType::uGoogle)
         return "google," + id;
       else
         return "unknown," + id;
@@ -134,6 +138,10 @@ namespace C3 {
   void add_entries(const uint64_t &id, const std::list<std::string> &list);
   void add_remove_entries(const uint64_t &id, const std::list<std::string> &added, const std::list<std::string> &removed);
   std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext);
+
+  /* Users */
+  bool update_user(const User &user);
+  User get_user(const std::string &uident);
 
   //TODO: Indexes
 };

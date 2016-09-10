@@ -91,11 +91,20 @@ namespace C3 {
 
   void handle_post_read(const crow::request &req, crow::response &res, uint64_t id) {
     try {
-      std::string cont = get_post_str(id);
-      res.end(cont);
+      Post p  = get_post(id);
+      Json::Value v = p.to_json_obj();
+
+      try {
+        User u = get_user(p.uident);
+        v["user"] = u.to_json_obj();
+      } catch(StorageExcept e) {
+        CROW_LOG_ERROR << "No such user: " << p.uident;
+      }
+
+      res.end(Json::writeString(wbuilder, v));
       return;
     } catch(StorageExcept &e) {
-      if(e == NotFound) {
+      if(e == StorageExcept::NotFound) {
         res.code = 404;
         res.end("404 Not Found");
       } else {
@@ -134,6 +143,8 @@ namespace C3 {
         res.end("403 Forbidden");
         return;
       }
+
+      CROW_LOG_INFO << "New post by: " << cookieCtx.session.uident;
 
       Post p(req.body, cookieCtx.session.uident);
 
@@ -223,7 +234,7 @@ namespace C3 {
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
-      if(e == IDMismatch) {
+      if(e == StorageExcept::IDMismatch) {
         res.code = 400;
         res.end("400 Bad Request");
       } else {
@@ -260,7 +271,7 @@ namespace C3 {
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
-      if(e == NotFound) {
+      if(e == StorageExcept::NotFound) {
         res.code = 404;
         res.end("404 Not Found");
       } else {

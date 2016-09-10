@@ -20,6 +20,9 @@ namespace C3 {
     uint16_t server_port;
     bool server_multithreaded;
 
+    // Proxy
+    std::string proxy;
+
     // Database
     std::string db_path;
     uint64_t db_cache;

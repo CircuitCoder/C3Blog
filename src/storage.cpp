@@ -45,11 +45,13 @@ namespace C3 {
   CommaSepComparator commentCmp({ Limitor::Greater, Limitor::Less });
   CommaSepComparator entryCmp({ Limitor::Less, Limitor::Greater });
   CommaSepComparator indexCmp({ Limitor::Less, Limitor::Greater });
+  CommaSepComparator userCmp({ Limitor::Less, Limitor::Less });
 
   leveldb::DB *postDB;
   leveldb::DB *indexDB;
   leveldb::DB *commentDB;
   leveldb::DB *entryDB;
+  leveldb::DB *userDB;
 
   Post::Post(
       const std::string &uident,
@@ -63,7 +65,7 @@ namespace C3 {
 
   Post::Post(const std::string &json) {
     Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
 
     std::vector<std::string> tags(r["tags"].size());
     for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
@@ -85,7 +87,7 @@ namespace C3 {
   Post::Post(const std::string &json, const std::string &uident) :
         uident(uident), post_time(current_time()) {
     Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
 
     std::vector<std::string> tags(r["tags"].size());
     for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
@@ -99,7 +101,7 @@ namespace C3 {
     this->update_time = this->post_time;
   }
 
-  std::string Post::to_json(void) const {
+  Json::Value Post::to_json_obj(void) const {
     Json::Value r;
     r["uident"] = uident;
     r["url"] = url;
@@ -111,7 +113,11 @@ namespace C3 {
     for(auto e : tags) v.append(e);
     r["tags"] = v;
 
-    return Json::writeString(wbuilder, r);
+    return r;
+  }
+
+  std::string Post::to_json(void) const {
+    return Json::writeString(wbuilder, this->to_json_obj());
   }
 
   Comment::Comment(
@@ -122,7 +128,7 @@ namespace C3 {
 
   Comment::Comment(const std::string &json) {
     Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
 
     uident = r["uident"].asString();
     content = r["content"].asString();
@@ -132,17 +138,21 @@ namespace C3 {
   Comment::Comment(const std::string &json, const std::string &uident) :
         uident(uident), comment_time(current_time()) {
     Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
 
     content = r["content"].asString();
   }
 
-  std::string Comment::to_json(void) const {
+  Json::Value Comment::to_json_obj(void) const {
     Json::Value r;
     r["uident"] = uident;
     r["content"] = content;
 
-    return Json::writeString(wbuilder, r);
+    return r;
+  }
+
+  std::string Comment::to_json(void) const {
+    return Json::writeString(wbuilder, this->to_json_obj());
   }
 
   User::User(
@@ -155,12 +165,12 @@ namespace C3 {
 
   User::User(const std::string &json) {
     Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw ParseError;
+    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
 
     // Type
     std::string typestr = r["type"].asString();
-    if(typestr == "google") type = uGoogle;
-    else type = uUnknown;
+    if(typestr == "google") type = User::UserType::uGoogle;
+    else type = User::UserType::uUnknown;
 
     id = r["id"].asString();
     name = r["name"].asString();
@@ -168,9 +178,9 @@ namespace C3 {
     avatar = r["avatar"].asString();
   }
 
-  std::string User::to_json(void) const {
+  Json::Value User::to_json_obj(void) const {
     Json::Value r;
-    if(type == uGoogle) r["type"] = "google";
+    if(type == User::UserType::uGoogle) r["type"] = "google";
     else r["type"] = "unknown";
 
     r["id"] = id;
@@ -178,7 +188,11 @@ namespace C3 {
     r["email"] = email;
     r["avatar"] = avatar;
 
-    return Json::writeString(wbuilder, r);
+    return r;
+  }
+
+  std::string User::to_json(void) const {
+    return Json::writeString(wbuilder, this->to_json_obj());
   }
 
   CommaSepComparator::CommaSepComparator(std::initializer_list<Limitor> lims) :
@@ -251,6 +265,7 @@ namespace C3 {
     INIT_DB(index);
     INIT_DB(comment);
     INIT_DB(entry);
+    INIT_DB(user);
 
     return true;
   }
@@ -299,13 +314,13 @@ namespace C3 {
     leveldb::Status s = postDB->Get(leveldb::ReadOptions(), std::to_string(id), &v);
     if(s.ok()) return v;
     else {
-      if(s.IsNotFound()) throw NotFound;
+      if(s.IsNotFound()) throw StorageExcept::NotFound;
       else throw s;
     }
   }
 
   void update_post(const uint64_t &id, const Post &post) {
-    if(!(post.post_time == id)) throw IDMismatch;
+    if(!(post.post_time == id)) throw StorageExcept::IDMismatch;
 
     // TODO: use r-value reference
     Post np = post;
@@ -317,7 +332,7 @@ namespace C3 {
   void delete_post(const uint64_t &id) {
     leveldb::Status s = postDB->Delete(leveldb::WriteOptions(), std::to_string(id));
     if(!s.ok()) {
-      if(s.IsNotFound()) throw NotFound;
+      if(s.IsNotFound()) throw StorageExcept::NotFound;
       else throw s;
     }
   }
@@ -385,5 +400,21 @@ namespace C3 {
 
     hasNext = it->Valid() && _entryEquals(it->key().ToString(), entry);
     return result;
+  }
+
+  /* Users */
+  bool update_user(const User &user) {
+    leveldb::Status s = userDB->Put(leveldb::WriteOptions(), user.getKey(), user.to_json());
+    return s.ok();
+  }
+
+  User get_user(const std::string &uident) {
+    std::string v;
+    leveldb::Status s = userDB->Get(leveldb::ReadOptions(), uident, &v);
+    if(s.ok()) return User(v);
+    else {
+      if(s.IsNotFound()) throw StorageExcept::NotFound;
+      else throw s;
+    }
   }
 }

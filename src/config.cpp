@@ -51,6 +51,8 @@ namespace C3 {
       READ_CONFIG("server.port", ["server"]["port"], server_port, uint16_t, "an integer");
       READ_CONFIG("server.multithreaded", ["server"]["multithreaded"], server_multithreaded, bool, "a boolean");
 
+      READ_CONFIG("proxy", ["proxy"], proxy, std::string, "a string");
+
       READ_CONFIG("db.path", ["db"]["path"], db_path, std::string, "a string");
       READ_CONFIG("db.cache", ["db"]["cache"], db_cache, uint64_t, "an integer");
 
