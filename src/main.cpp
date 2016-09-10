@@ -11,8 +11,6 @@
 
 using namespace C3;
 
-const int PORT = 3018;
-
 void stop_handler(int s) {
   std::cout<<"Shutdown down..."<<std::endl;
   stop_storage();
