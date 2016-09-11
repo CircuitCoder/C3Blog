@@ -5,7 +5,7 @@
 
 # 编译
 ```
-cmake -DCMAKE_BUIlD_TYPE=Release .
+cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
 这会在项目根目录下生成一个 c3_blog 可执行文件。
