@@ -66,8 +66,12 @@ namespace C3 {
       if(ctx.saveSession) saveSession(ctx.sid, ctx.session);
 
       // Append Content-Type if not presents
-      if(res.get_header_value("Content-Type") == "")
-        res.set_header("Content-Type", "application/json; charset=utf-8");
+      if(res.get_header_value("Content-Type") == "") {
+        if(res.code == 200)
+          res.set_header("Content-Type", "application/json; charset=utf-8");
+        else
+          res.set_header("Content-Type", "text/plain; charset=utf-8");
+      }
     }
   };
 

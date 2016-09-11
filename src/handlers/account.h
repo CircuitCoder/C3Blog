@@ -44,7 +44,6 @@ namespace C3 {
   }
   
   void handle_account_login(const crow::request &req, crow::response &res) {
-
     Json::Value body;
     if(!parseFromString(rbuilder, req.body, &body)
         || !body.isObject()
@@ -114,6 +113,7 @@ namespace C3 {
         if(!jres.isMember("email") || !jres["email"].isString()) {
           if(jres.isMember("error_description")) {
             res.code = 403;
+            res.set_header("Content-Type", "application/json; charset=utf-8");
             res.end(buf);
             return;
           } else {
@@ -125,6 +125,7 @@ namespace C3 {
 
         if(!jres.isMember("sub") || !jres["sub"].isString() || jres["sub"].asString() != sub) {
           res.code = 403;
+          res.set_header("Content-Type", "application/json; charset=utf-8");
           res.end("{\"error_description\":\"Sub mismatch\"}");
           return;
         }
@@ -139,6 +140,7 @@ namespace C3 {
 
         if(!update_user(u)) {
           res.code = 500;
+          res.set_header("Content-Type", "application/json; charset=utf-8");
           res.end("{\"error_description\":\"Unable to update your account\"}");
           return;
         }
