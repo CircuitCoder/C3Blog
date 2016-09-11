@@ -1,6 +1,7 @@
 #include <tinyxml2.h>
 #include <chrono>
 #include <sstream>
+#include <iomanip>
 #include <ctime>
 
 #include "feed.h"
@@ -22,7 +23,10 @@ namespace C3 {
       std::tm *cal = gmtime(&tt);
 
       std::stringstream ss;
-      ss<<cal->tm_year + 1900<<'-'<<cal->tm_mon + 1<<'-'<<cal->tm_mday<<'T'<<cal->tm_hour<<':'<<cal->tm_min<<':'<<cal->tm_sec<<'Z';
+      ss.fill('0');
+      ss
+        << cal->tm_year + 1900 << '-' << std::setw(2) << cal->tm_mon + 1 << '-' << std::setw(2) << cal->tm_mday
+        << 'T' << std::setw(2) << cal->tm_hour << ':' << std::setw(2) << cal->tm_min << ':' << std::setw(2) << cal->tm_sec << 'Z';
       return ss.str();
     }
 
@@ -44,7 +48,10 @@ namespace C3 {
       root->SetAttribute("xmlns", "http://www.w3.org/2005/Atom");
 
       auto id_e = doc.NewElement("id");
-      id_e->SetText(url.c_str());
+      if(url.c_str()[url.length() -1] == '/')
+        id_e->SetText(url.c_str());
+      else
+        id_e->SetText((url + "/").c_str());
       root->InsertEndChild(id_e);
 
       auto title_e = doc.NewElement("title");
@@ -54,6 +61,11 @@ namespace C3 {
       auto link_e = doc.NewElement("link");
       link_e->SetAttribute("href", url.c_str());
       root->InsertEndChild(link_e);
+
+      auto self_e = doc.NewElement("link");
+      self_e->SetAttribute("href", "/feed");
+      self_e->SetAttribute("rel", "self");
+      root->InsertEndChild(self_e);
 
       auto dur = std::chrono::system_clock::now().time_since_epoch();
       auto durStr = generate_rfc3999(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count());
@@ -65,7 +77,7 @@ namespace C3 {
         auto entry_e = doc.NewElement("entry");
         
         auto entry_id_e = doc.NewElement("id");
-        entry_id_e->SetText((url + "[" + std::to_string(i->post_time) + "]").c_str());
+        entry_id_e->SetText(("c3blog://post/" + url + std::to_string(i->post_time)).c_str());
         entry_e->InsertEndChild(entry_id_e);
 
         auto entry_title_e = doc.NewElement("title");
@@ -81,10 +93,32 @@ namespace C3 {
         entry_updated_e->SetText(generate_rfc3999(i->update_time).c_str());
         entry_e->InsertEndChild(entry_updated_e);
 
+        auto entry_published_e = doc.NewElement("published");
+        entry_published_e->SetText(generate_rfc3999(i->update_time).c_str());
+        entry_e->InsertEndChild(entry_published_e);
+
         auto entry_link_e = doc.NewElement("link");
         entry_link_e->SetAttribute("href", (url + "/" + i->url).c_str());
-        entry_link_e->SetAttribute("rel", "alternative");
+        entry_link_e->SetAttribute("rel", "alternate");
         entry_e->InsertEndChild(entry_link_e);
+
+        auto entry_author_e = doc.NewElement("author");
+        auto entry_author_name_e = doc.NewElement("name");
+
+        try {
+          User author = get_user(i->uident);
+          auto entry_author_email_e = doc.NewElement("email");
+          entry_author_name_e->SetText(author.name.c_str());
+          entry_author_email_e->SetText(author.email.c_str());
+
+          entry_author_e->InsertEndChild(entry_author_name_e);
+          entry_author_e->InsertEndChild(entry_author_email_e);
+        } catch(StorageExcept e) {
+          entry_author_name_e->SetText("Anonymous");
+          entry_author_e->InsertEndChild(entry_author_name_e);
+        }
+
+        entry_e->InsertEndChild(entry_author_e);
 
         root->InsertEndChild(entry_e);
       }
