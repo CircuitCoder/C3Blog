@@ -68,6 +68,7 @@ void start_server(const Config &c) {
   CROW_ROUTE(app, "/account/logout").methods("POST"_method)(handle_account_logout);
 
   CROW_ROUTE(app, "/feed").methods("GET"_method)(handle_feed);
+  CROW_ROUTE(app, "/sitemap").methods("GET"_method)(handle_sitemap);
 
   crow::logger::setLogLevel(crow::LogLevel::WARNING);
 

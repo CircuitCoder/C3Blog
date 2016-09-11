@@ -7,11 +7,16 @@
 #include "feed.h"
 
 #include "storage.h"
+#include "util.h"
 
 namespace C3 {
   namespace Feed {
-    std::string feed_str = "";
-    bool feed_valid = false;
+    std::string atom_str;
+    bool atom_valid = false;
+
+    std::string sitemap_str;
+    bool sitemap_valid = false;
+
     uint16_t feed_length;
     std::string title;
     std::string url;
@@ -35,13 +40,16 @@ namespace C3 {
       feed_length = c.app_feedLength;
       title = c.app_title;
       url = c.app_url;
+
+      if(url.c_str()[url.length() -1] != '/') url += '/';
     }
 
     void invalidate(void) {
-      feed_valid = false;
+      atom_valid = false;
+      sitemap_valid = false;
     }
 
-    void update(void) {
+    void updateAtom(void) {
       bool dummy;
       auto posts = list_posts(0, feed_length, dummy);
 
@@ -52,10 +60,7 @@ namespace C3 {
       root->SetAttribute("xmlns", "http://www.w3.org/2005/Atom");
 
       auto id_e = doc.NewElement("id");
-      if(url.c_str()[url.length() -1] == '/')
-        id_e->SetText(url.c_str());
-      else
-        id_e->SetText((url + "/").c_str());
+      id_e->SetText(url.c_str());
       root->InsertEndChild(id_e);
 
       auto title_e = doc.NewElement("title");
@@ -132,15 +137,55 @@ namespace C3 {
 
       tinyxml2::XMLPrinter printer(NULL, true, 0);
       doc.Print(&printer);
-      feed_str = printer.CStr();
+      atom_str = printer.CStr();
 
-      feed_valid = true;
+      atom_valid = true;
     }
 
-    std::string fetch(void) {
-      if(!feed_valid) update();
+    std::string fetchAtom(void) {
+      if(!atom_valid) updateAtom();
 
-      return feed_str;
+      return atom_str;
+    }
+
+    void updateSitemap(void) {
+      bool dummy;
+      auto posts = list_posts(0, -1, dummy);
+
+      tinyxml2::XMLDocument doc;
+
+      auto dec = doc.NewDeclaration();
+      auto root = doc.NewElement("urlset");
+      root->SetAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
+
+      for(auto p = posts.begin(); p != posts.end(); ++p) {
+        auto url_e = doc.NewElement("url");
+
+        auto loc_e = doc.NewElement("loc");
+        loc_e->SetText((url + p->url).c_str());
+        url_e->InsertEndChild(loc_e);
+
+        auto lastmod_e = doc.NewElement("lastmod");
+        lastmod_e->SetText(generate_rfc3999(p->update_time).c_str());
+        url_e->InsertEndChild(lastmod_e);
+
+        root->InsertEndChild(url_e);
+      }
+
+      doc.InsertEndChild(dec);
+      doc.InsertEndChild(root);
+
+      tinyxml2::XMLPrinter printer(NULL, true, 0);
+      doc.Print(&printer);
+      sitemap_str = printer.CStr();
+
+      sitemap_valid = true;
+    }
+
+    std::string fetchSitemap(void) {
+      if(!sitemap_valid) updateSitemap();
+
+      return sitemap_str;
     }
   }
 }
