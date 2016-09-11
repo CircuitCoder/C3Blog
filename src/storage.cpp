@@ -293,6 +293,41 @@ namespace C3 {
     delete indexDB;
   }
 
+  bool check_authors(void) {
+    leveldb::Iterator *it = postDB->NewIterator(leveldb::ReadOptions());
+    it->SeekToFirst();
+
+    std::string defaultValue = "";
+    std::string inputValue;
+    std::string authorBuf;
+
+    for(it->SeekToFirst() ;it->Valid(); it->Next()) {
+      Post p = Post(it->value().ToString());
+      leveldb::Status s = userDB->Get(leveldb::ReadOptions(), p.uident,&authorBuf);
+      if(s.ok()) continue;
+      else if(!s.IsNotFound()) return false;
+
+      if(p.uident.length() > 0) defaultValue = p.uident;
+      std::cout<<"Invalid user \""<<p.uident<<"\" for post: "<<p.topic<<std::endl;
+      std::cout<<"Input a new user";
+      if(defaultValue.length() > 0)
+        std::cout<<" ["<<defaultValue<<"]: ";
+      else std::cout<<": ";
+
+      std::getline(std::cin, inputValue);
+      if(std::cin.eof()) return false;
+      else if(!inputValue.empty()) defaultValue = inputValue;
+      
+      p.uident = defaultValue;
+      leveldb::Status ws = postDB->Put(leveldb::WriteOptions(), std::to_string(p.post_time), p.to_json());
+      if(!ws.ok()) return false;
+    }
+
+    return it->status().ok();
+  }
+
+  /* Posts */
+
   uint64_t add_post(const Post &post) {
     // Using milliseconds since Unix Epoch as post id
     uint64_t ts = post.post_time;

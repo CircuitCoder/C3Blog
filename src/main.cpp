@@ -1,6 +1,7 @@
 #include <iostream>
 #include <crow.h>
 #include <signal.h>
+#include <boost/program_options.hpp>
 
 #include "storage.h"
 #include "handler.h"
@@ -27,35 +28,7 @@ void setup_globals() {
   wbuilder["indentation"] = "";
 }
 
-int main() {
-
-  struct sigaction sigIntHandler;
-
-  sigIntHandler.sa_handler = stop_handler;
-  sigemptyset(&sigIntHandler.sa_mask);
-  sigIntHandler.sa_flags = 0;
-
-  sigaction(SIGINT, &sigIntHandler, NULL);
-
-  /* Setup */
-  Config c;
-  if(!c.read("config.yml")) {
-    std::cout<<"Failed to parse config file. Aborting."<<std::endl;
-    return -1;
-  }
-
-  if(!setup_storage(c.db_path, c.db_cache)) {
-    std::cout<<"Failed to initialize storage. Aborting."<<std::endl;
-    return -1;
-  }
-
-  setup_globals();
-  setup_handlers(c);
-  setup_middleware(c);
-  setup_url_map();
-  Auth::setupAuthors(c);
-  Feed::setup(c);
-
+void start_server(const Config &c) {
   crow::App<crow::CookieParser, Middleware> app;
 
   auto posts_dispatcher = [](const crow::request &req, crow::response &res) -> void {
@@ -103,4 +76,68 @@ int main() {
   } else {
     app.port(c.server_port).run();
   }
+}
+
+int main(int argc, char** argv) {
+  namespace po = boost::program_options;
+  po::options_description desc("CLI Options");
+  desc.add_options()
+    ("help", "print help message")
+    ("check,C", "Perform storage check before server startup")
+    ("check-authors", "Perform author check before server startup");
+  po::variables_map opts;
+  po::store(po::parse_command_line(argc, argv, desc), opts);
+  po::notify(opts);
+
+  if(opts.count("help")) {
+    std::cout<<desc<<std::endl;
+    return 0;
+  }
+
+  bool flag_check = opts.count("check");
+  bool flag_check_authors = flag_check || opts.count("check-authors");
+
+  struct sigaction sigIntHandler;
+
+  sigIntHandler.sa_handler = stop_handler;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
+
+  sigaction(SIGINT, &sigIntHandler, NULL);
+
+  /* Setup */
+  Config c;
+  if(!c.read("config.yml")) {
+    std::cout<<"Failed to parse config file. Aborting."<<std::endl;
+    return -1;
+  }
+
+  if(!setup_storage(c.db_path, c.db_cache)) {
+    std::cout<<"Failed to initialize storage. Aborting."<<std::endl;
+    return -1;
+  }
+
+  setup_globals();
+  setup_handlers(c);
+  setup_middleware(c);
+  setup_url_map();
+  Auth::setupAuthors(c);
+  Feed::setup(c);
+
+  bool validFlag = true;
+
+  if(flag_check_authors) {
+    if(!check_authors()) {
+      std::cout<<"An unexpected error occured during the author check."<<std::endl;
+      validFlag = false;
+    }
+  }
+
+  if(!validFlag) {
+    stop_storage();
+    return 1;
+  }
+
+  std::cout<<"Starting server..."<<std::endl;
+  start_server(c);
 }

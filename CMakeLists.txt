@@ -12,10 +12,10 @@ set(CMAKE_CXX_STANDARD 11)
 set(Boost_USE_MULTITHREADED ON)
 
 find_package(CURL REQUIRED)
-find_package(Boost 1.54.0 COMPONENTS system thread filesystem REQUIRED)
+find_package(Boost 1.54.0 COMPONENTS system thread filesystem program_options REQUIRED)
 find_package(LevelDB REQUIRED)
-find_package(Threads)
-find_package(Discount)
+find_package(Threads REQUIRED)
+find_package(Discount REQUIRED)
 find_package(PkgConfig)
 
 pkg_search_module(YamlCPP REQUIRED yaml-cpp)

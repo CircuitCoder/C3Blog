@@ -119,6 +119,7 @@ namespace C3 {
   bool setup_storage(const std::string &dir, uint64_t cache);
   bool setup_url_map(void);
   void stop_storage(void);
+  bool check_authors(void);
 
   /* Posts */
   uint64_t add_post(const Post &post);

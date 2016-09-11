@@ -33,7 +33,7 @@ namespace C3 {
       proxy_type = 1;
     }
 
-    CROW_LOG_INFO << "Using proxy: " << proxy;
+    std::cout << "Using proxy: " << proxy <<std::endl;
   }
 
   const std::string baseurl = "https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=";
