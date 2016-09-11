@@ -11,6 +11,7 @@
 namespace C3 {
   namespace Feed {
     std::string feed_str = "";
+    bool feed_valid = false;
     uint16_t feed_length;
     std::string title;
     std::string url;
@@ -34,7 +35,10 @@ namespace C3 {
       feed_length = c.app_feedLength;
       title = c.app_title;
       url = c.app_url;
-      update();
+    }
+
+    void invalidate(void) {
+      feed_valid = false;
     }
 
     void update(void) {
@@ -129,9 +133,13 @@ namespace C3 {
       tinyxml2::XMLPrinter printer(NULL, true, 0);
       doc.Print(&printer);
       feed_str = printer.CStr();
+
+      feed_valid = true;
     }
 
     std::string fetch(void) {
+      if(!feed_valid) update();
+
       return feed_str;
     }
   }

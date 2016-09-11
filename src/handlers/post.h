@@ -166,7 +166,7 @@ namespace C3 {
       //TODO: batch
       add_entries(id, tags);
 
-      Feed::update();
+      Feed::invalidate();
 
       Json::Value v;
       v["id"] = (Json::UInt64) id;
@@ -230,7 +230,7 @@ namespace C3 {
       add_remove_entries(id, added, removed);
       update_post(id, Post(req.body));
 
-      Feed::update();
+      Feed::invalidate();
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
@@ -267,7 +267,7 @@ namespace C3 {
       remove_entries(id, tags);
       delete_post(id);
 
-      Feed::update();
+      Feed::invalidate();
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
