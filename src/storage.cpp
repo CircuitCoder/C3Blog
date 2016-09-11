@@ -3,6 +3,7 @@
 #include "mapper.h"
 
 #include <iostream>
+#include <memory>
 #include <cassert>
 #include <cstdarg>
 #include <chrono>
@@ -271,7 +272,7 @@ namespace C3 {
   }
 
   bool setup_url_map(void) {
-    auto it = postDB->NewIterator(leveldb::ReadOptions());
+    std::unique_ptr<leveldb::Iterator> it(postDB->NewIterator(leveldb::ReadOptions()));
 
     for(it->SeekToFirst(); it->Valid(); it->Next()) {
       try {
@@ -294,7 +295,7 @@ namespace C3 {
   }
 
   bool check_authors(void) {
-    leveldb::Iterator *it = postDB->NewIterator(leveldb::ReadOptions());
+    std::unique_ptr<leveldb::Iterator> it(postDB->NewIterator(leveldb::ReadOptions()));
     it->SeekToFirst();
 
     std::string defaultValue = "";
@@ -373,7 +374,7 @@ namespace C3 {
   }
 
   std::list<Post> list_posts(int offset, int count, bool &hasNext) {
-    leveldb::Iterator *it = postDB->NewIterator(leveldb::ReadOptions());
+    std::unique_ptr<leveldb::Iterator> it(postDB->NewIterator(leveldb::ReadOptions()));
     it->SeekToFirst();
 
     std::list<Post> result;
@@ -422,7 +423,7 @@ namespace C3 {
   }
 
   std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext) {
-    leveldb::Iterator *it = entryDB->NewIterator(leveldb::ReadOptions());
+    std::unique_ptr<leveldb::Iterator> it(entryDB->NewIterator(leveldb::ReadOptions()));
     it->Seek(entry);
 
     std::list<uint64_t> result;
