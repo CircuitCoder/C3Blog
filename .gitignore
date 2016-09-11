@@ -10,6 +10,7 @@
 # Testing
 /db
 /config.yml
+*.dSYM
 
 # Vim
 .*.sw[a-p]
