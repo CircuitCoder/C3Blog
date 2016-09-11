@@ -98,7 +98,7 @@ namespace C3 {
         User u = get_user(p.uident);
         v["user"] = u.to_json_obj();
       } catch(StorageExcept e) {
-        CROW_LOG_ERROR << "No such user: " << p.uident;
+        CROW_LOG_WARNING << "No such user: " << p.uident;
       }
 
       res.end(Json::writeString(wbuilder, v));
@@ -191,6 +191,7 @@ namespace C3 {
     try {
       Post original = get_post(id);
       Post current(req.body);
+      current.uident = original.uident;
 
       // Tags
       sort(current.tags.begin(), current.tags.end());
@@ -228,7 +229,7 @@ namespace C3 {
 
       //TODO: batch
       add_remove_entries(id, added, removed);
-      update_post(id, Post(req.body));
+      update_post(id, current);
 
       Feed::invalidate();
 
