@@ -9,6 +9,7 @@
 #include "util.h"
 #include "config.h"
 #include "auth.h"
+#include "indexer.h"
 
 using namespace C3;
 
@@ -70,6 +71,8 @@ void start_server(const Config &c) {
   CROW_ROUTE(app, "/feed").methods("GET"_method)(handle_feed);
   CROW_ROUTE(app, "/sitemap").methods("GET"_method)(handle_sitemap);
 
+  CROW_ROUTE(app, "/search/<string>").methods("GET"_method)(handle_search);
+
   crow::logger::setLogLevel(crow::LogLevel::WARNING);
 
   if(c.server_multithreaded) {
@@ -85,7 +88,8 @@ int main(int argc, char** argv) {
   desc.add_options()
     ("help", "print help message")
     ("check,C", "Perform storage check before server startup")
-    ("check-authors", "Perform author check before server startup");
+    ("check-authors", "Perform author check before server startup")
+    ("reindex,R", "Force reindex at startup");
   po::variables_map opts;
   po::store(po::parse_command_line(argc, argv, desc), opts);
   po::notify(opts);
@@ -97,6 +101,7 @@ int main(int argc, char** argv) {
 
   bool flag_check = opts.count("check");
   bool flag_check_authors = flag_check || opts.count("check-authors");
+  bool flag_reindex = opts.count("reindex");
 
   struct sigaction sigIntHandler;
 
@@ -122,6 +127,7 @@ int main(int argc, char** argv) {
   setup_handlers(c);
   setup_middleware(c);
   setup_url_map();
+  setup_indexer(c);
   Auth::setupAuthors(c);
   Feed::setup(c);
 
@@ -132,6 +138,10 @@ int main(int argc, char** argv) {
       std::cout<<"An unexpected error occured during the author check."<<std::endl;
       validFlag = false;
     }
+  }
+
+  if(flag_reindex) {
+    reindex_all();
   }
 
   if(!validFlag) {

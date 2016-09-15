@@ -2,7 +2,7 @@
 
 #include <random>
 #include <string>
-#include <vector>
+#include <list>
 #include <json/json.h>
 
 namespace C3 {
@@ -19,7 +19,7 @@ namespace C3 {
 
   uint64_t current_time(void);
 
-  std::vector<std::string> split(const std::string &, char);
+  std::list<std::string> split(const std::string &, char);
 
   std::string random_chars(int);
 

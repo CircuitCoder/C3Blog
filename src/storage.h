@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <unordered_map>
 #include <leveldb/db.h>
 #include <leveldb/comparator.h>
 #include <json/json.h>
@@ -144,5 +145,8 @@ namespace C3 {
   bool update_user(const User &user);
   User get_user(const std::string &uident);
 
-  //TODO: Indexes
+  /* Index */
+  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> &indexes);
+  void clear_indexes(uint64_t post);
+  std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> query_indexes(const std::string &str);
 };

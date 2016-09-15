@@ -45,14 +45,16 @@ namespace C3 {
   CommaSepComparator postCmp({ Limitor::Greater });
   CommaSepComparator commentCmp({ Limitor::Greater, Limitor::Less });
   CommaSepComparator entryCmp({ Limitor::Less, Limitor::Greater });
-  CommaSepComparator indexCmp({ Limitor::Less, Limitor::Greater });
   CommaSepComparator userCmp({ Limitor::Less, Limitor::Less });
+  CommaSepComparator wordsCmp({ Limitor::Less });
+  CommaSepComparator indexCmp({ Limitor::Less, Limitor::Greater }); // List from newer posts
 
   leveldb::DB *postDB;
-  leveldb::DB *indexDB;
   leveldb::DB *commentDB;
   leveldb::DB *entryDB;
   leveldb::DB *userDB;
+  leveldb::DB *wordsDB;
+  leveldb::DB *indexDB;
 
   Post::Post(
       const std::string &uident,
@@ -203,26 +205,34 @@ namespace C3 {
     std::string sa = a.ToString();
     std::string sb = b.ToString();
 
-    std::vector<std::string> ia = split(sa, ',');
-    std::vector<std::string> ib = split(sb, ',');
+    std::list<std::string> ia = split(sa, ',');
+    std::list<std::string> ib = split(sb, ',');
 
-    for(int i = 0; ; ++i) {
-      if(i == ia.size()) {
-        if(i == ib.size()) return 0;
+    auto iaIter = ia.begin();
+    auto ibIter = ib.begin();
+    auto limIter = this->lims.begin();
+
+    while(true) {
+      if(iaIter == ia.end()) {
+        if(ibIter == ib.end()) return 0;
         else return -1;
-      } else if(i == ib.size()) return 1;
+      } else if(ibIter == ib.end()) return 1;
 
       Limitor lim;
-      if(i<this->lims.size()) lim = this->lims[i];
+      if(limIter != this->lims.end()) lim = *limIter;
       else lim = Limitor::Less;
 
       if(lim == Limitor::Less) {
-        if(ia[i] < ib[i]) return -1;
-        else if(ia[i] > ib[i]) return 1;
+        if(*iaIter < *ibIter) return -1;
+        else if(*iaIter > *ibIter) return 1;
       } else {
-        if(ia[i] < ib[i]) return 1;
-        else if(ia[i] > ib[i]) return -1;
+        if(*iaIter < *ibIter) return 1;
+        else if(*iaIter > *ibIter) return -1;
       }
+
+      ++iaIter;
+      ++ibIter;
+      if(limIter != this->lims.end()) ++limIter;
     }
   }
 
@@ -263,10 +273,11 @@ namespace C3 {
     std::cout<<"Storage: Opening db at "<<dir<<std::endl;
 
     INIT_DB(post);
-    INIT_DB(index);
     INIT_DB(comment);
     INIT_DB(entry);
     INIT_DB(user);
+    INIT_DB(words);
+    INIT_DB(index);
 
     return true;
   }
@@ -452,5 +463,81 @@ namespace C3 {
       if(s.IsNotFound()) throw StorageExcept::NotFound;
       else throw s;
     }
+  }
+
+  /* Index */
+  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> &indexes) {
+    leveldb::WriteBatch indexBatch;
+
+    std::cout<<"Indexing for: "<<post<<std::endl;
+
+    std::string words;
+    leveldb::Status s = wordsDB->Get(leveldb::ReadOptions(), std::to_string(post), &words);
+    if(!s.ok()) {
+      if(!s.IsNotFound()) throw s;
+    } else {
+      std::stringstream ws(words);
+      std::string w;
+      while(ws>>w)
+        indexBatch.Delete(w + ',' + std::to_string(post));
+    }
+
+    std::stringstream curWords;
+    for(auto it = indexes.begin(); it != indexes.end(); ++it) {
+      std::stringstream indexes;
+      for(auto occur = it->second.begin(); occur != it->second.end(); ++occur)
+        indexes<<occur->first<<' '<<(occur->second ? 't' : 'b')<<'\n';
+      indexBatch.Put(it->first + ',' + std::to_string(post), indexes.str());
+      curWords<<it->first<<'\n';
+
+      std::cout<<"Word: "<<it->first<<" -> "<<indexes.str()<<std::endl;
+    }
+
+    leveldb::Status is = indexDB->Write(leveldb::WriteOptions(), &indexBatch);
+    if(!is.ok()) throw is;
+    wordsDB->Put(leveldb::WriteOptions(), std::to_string(post), curWords.str());
+  }
+
+  void clear_indexes(uint64_t post) {
+    leveldb::WriteBatch batch;
+
+    std::string words;
+    leveldb::Status s = wordsDB->Get(leveldb::ReadOptions(), std::to_string(post), &words);
+    if(!s.ok()) {
+      if(s.IsNotFound()) throw StorageExcept::NotFound;
+      else throw s;
+    }
+
+    std::stringstream ws(words);
+    std::string w;
+    while(ws>>w)
+      batch.Delete(w + ',' + std::to_string(post));
+
+    indexDB->Write(leveldb::WriteOptions(), &batch);
+    wordsDB->Delete(leveldb::WriteOptions(), std::to_string(post));
+  }
+
+  std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> query_indexes(const std::string &str) {
+    std::unique_ptr<leveldb::Iterator> it(indexDB->NewIterator(leveldb::ReadOptions()));
+    it->Seek(str);
+
+    std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> res;
+    for(; it->Valid(); it->Next()) {
+      auto keySegs = split(it->key().ToString(), ',');
+      auto keyIter = keySegs.begin();
+      if(*keyIter != str) break;
+
+      std::stringstream ss(it->value().ToString());
+      uint32_t v;
+      char f;
+      std::list<std::pair<uint32_t, bool>> l;
+      while(ss>>v>>f)
+        l.push_back(std::make_pair(v, f == 't'));
+
+      ++keyIter;
+      res.emplace(std::stoull(*keyIter), std::move(l));
+    }
+
+    return res;
   }
 }

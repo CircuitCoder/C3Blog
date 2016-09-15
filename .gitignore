@@ -7,6 +7,9 @@
 # Binary
 /c3_blog
 
+# Dicts
+/dict
+
 # Testing
 /db
 /config.yml

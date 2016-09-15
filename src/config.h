@@ -23,6 +23,10 @@ namespace C3 {
     // Proxy
     std::string proxy;
 
+    // Search
+    std::string search_dict;
+    uint16_t search_cache;
+
     // Database
     std::string db_path;
     uint64_t db_cache;

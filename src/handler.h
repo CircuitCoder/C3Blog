@@ -4,11 +4,10 @@
 #include "handlers/util.h"
 #include "handlers/account.h"
 #include "handlers/feed.h"
+#include "handlers/search.h"
 
 /*
-#include "handlers/index.h"
 #include "handlers/comment.h"
-#include "handlers/search.h"
 */
 
 namespace C3 {

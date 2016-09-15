@@ -53,6 +53,9 @@ namespace C3 {
 
       READ_CONFIG("proxy", ["proxy"], proxy, std::string, "a string");
 
+      READ_CONFIG("search.dict", ["search"]["dict"], search_dict, std::string, "a string");
+      READ_CONFIG("search.cache", ["search"]["cache"], search_cache, uint16_t, "an integer");
+
       READ_CONFIG("db.path", ["db"]["path"], db_path, std::string, "a string");
       READ_CONFIG("db.cache", ["db"]["cache"], db_cache, uint64_t, "an integer");
 
