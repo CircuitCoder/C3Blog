@@ -49,6 +49,7 @@ namespace C3 {
       }
 
       recJson["hits"] = hitsJson;
+      recJson["post"] = get_post(rec->first).to_json_obj();
       recordsJson.append(recJson);
 
       ++i;
