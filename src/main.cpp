@@ -72,6 +72,7 @@ void start_server(const Config &c) {
   CROW_ROUTE(app, "/sitemap").methods("GET"_method)(handle_sitemap);
 
   CROW_ROUTE(app, "/search/<string>").methods("GET"_method)(handle_search);
+  CROW_ROUTE(app, "/search/<string>/<uint>").methods("GET"_method)(handle_search_page);
 
   crow::logger::setLogLevel(crow::LogLevel::WARNING);
 

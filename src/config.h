@@ -25,7 +25,9 @@ namespace C3 {
 
     // Search
     std::string search_dict;
-    uint16_t search_cache;
+    uint32_t search_cache;
+    uint32_t search_preview;
+    uint32_t search_length;
 
     // Database
     std::string db_path;
