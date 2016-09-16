@@ -36,6 +36,17 @@ namespace C3 {
     int i = 0;
 
     for(; rec != records.end() && i < search_length; ++rec) {
+
+      Post p = get_post(rec->first);
+
+      uint32_t lineEnd = 0, lineCount = 0;
+      while(lineEnd < p.content.length() && p.content[lineEnd] != '\n') ++lineEnd;
+
+      std::vector<uint32_t> lineHits(1);
+      std::vector<uint32_t> lineEnds(1);
+      lineEnds[0] = lineEnd;
+      lineHits[0] = 0;
+
       Json::Value recJson;
       Json::Value hitsJson(Json::arrayValue);
       recJson["post_id"] = rec->first;
@@ -45,11 +56,54 @@ namespace C3 {
         hitJson["length"] = std::get<1>(*hit);
         hitJson["title"] = std::get<2>(*hit);
 
+        while(std::get<0>(*hit) > lineEnd) {
+          ++lineCount;
+          ++lineEnd;
+          while(lineEnd < p.content.length() && p.content[lineEnd] != '\n')
+            ++lineEnd;
+          lineEnds.push_back(lineEnd);
+          lineHits.push_back(0);
+        }
+
+        ++lineHits[lineCount];
+
         hitsJson.append(hitJson);
       }
 
+      ++lineCount;
+
+      uint32_t maxStart = 0;
+      if(search_preview < lineCount) {
+        uint32_t maxSum;
+        uint32_t sum = 0;
+
+        for(uint32_t i = 0; i < search_preview ; ++i) {
+          sum += lineHits[i];
+        }
+
+        maxSum = sum;
+
+        for(uint32_t start = 1; start + search_preview <= lineCount; ++start) {
+          sum -= lineEnds[start - 1];
+          sum += lineEnds[start - 1 + search_preview];
+          if(sum > maxSum) {
+            maxSum = sum;
+            maxStart = start;
+          }
+        }
+      }
+
+      uint32_t maxEnd = maxStart + search_preview - 1;
+      if(maxEnd >= lineCount) maxEnd = lineCount - 1;
+      while(maxEnd > maxStart && lineHits[maxEnd] == 0) --maxEnd;
+      while(maxStart < maxEnd && lineHits[maxStart] == 0) ++maxStart;
+
+      const uint32_t startIndex = maxStart == 0 ? 0 : lineEnds[maxStart-1] +1;
+      const uint32_t endIndex = lineEnds[maxEnd];
+
+      recJson["preview"] = p.content.substr(startIndex, endIndex - startIndex);
+
       recJson["hits"] = hitsJson;
-      recJson["post"] = get_post(rec->first).to_json_obj();
       recordsJson.append(recJson);
 
       ++i;
