@@ -300,8 +300,10 @@ namespace C3 {
 
   void stop_storage(void) {
     delete postDB;
-    delete indexDB;
     delete commentDB;
+    delete entryDB;
+    delete userDB;
+    delete wordsDB;
     delete indexDB;
   }
 

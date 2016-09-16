@@ -1,7 +1,8 @@
 #include <iostream>
 #include <crow.h>
-#include <signal.h>
 #include <boost/program_options.hpp>
+#include <memory>
+#include <thread>
 
 #include "storage.h"
 #include "handler.h"
@@ -13,10 +14,8 @@
 
 using namespace C3;
 
-void stop_handler(int s) {
-  std::cout<<"Shutdown down..."<<std::endl;
-  stop_storage();
-}
+typedef crow::App<crow::CookieParser, Middleware> App;
+std::unique_ptr<App> _app;
 
 namespace C3 {
   extern Json::StreamWriterBuilder wbuilder;
@@ -29,8 +28,21 @@ void setup_globals() {
   wbuilder["indentation"] = "";
 }
 
-void start_server(const Config &c) {
-  crow::App<crow::CookieParser, Middleware> app;
+void join_server(const Config &c) {
+  if(c.server_multithreaded) {
+    _app->port(c.server_port).multithreaded().run();
+  } else {
+    _app->port(c.server_port).run();
+  }
+
+  stop_storage();
+  std::cout<<"Server stopped."<<std::endl;
+}
+
+void initialize_server(const Config &c) {
+  _app = std::unique_ptr<App>(new crow::App<crow::CookieParser, Middleware>());
+
+  App &app = *_app;
 
   auto posts_dispatcher = [](const crow::request &req, crow::response &res) -> void {
 
@@ -75,11 +87,31 @@ void start_server(const Config &c) {
   CROW_ROUTE(app, "/search/<string>/<uint>").methods("GET"_method)(handle_search_page);
 
   crow::logger::setLogLevel(crow::LogLevel::WARNING);
+}
 
-  if(c.server_multithreaded) {
-    app.port(c.server_port).multithreaded().run();
-  } else {
-    app.port(c.server_port).run();
+void start_loop() {
+  std::string cmd;
+  while(true) {
+    std::cout<<"> ";
+    std::getline(std::cin, cmd);
+    auto segs = split(cmd, ' ');
+    if(segs.size() == 0) continue;
+
+    if(segs.front() == "stop") {
+      if(segs.size() != 1) std::cout<<"Invalid command: \"stop\" takes no argument"<<std::endl;
+      else {
+        _app->stop();
+        break;
+      }
+    } else if(segs.front() == "help") {
+      if(segs.size() != 1) std::cout<<"Invalid command: \"help\" takes no argument"<<std::endl;
+      else {
+        std::cout<<"Available commands:"<<std::endl
+          <<"stop"<<"\t"<<"Stops the server"<<std::endl;
+      }
+    } else {
+      std::cout<<"Unknown command: \""<<segs.front()<<"\""<<std::endl;
+    }
   }
 }
 
@@ -103,14 +135,6 @@ int main(int argc, char** argv) {
   bool flag_check = opts.count("check");
   bool flag_check_authors = flag_check || opts.count("check-authors");
   bool flag_reindex = opts.count("reindex");
-
-  struct sigaction sigIntHandler;
-
-  sigIntHandler.sa_handler = stop_handler;
-  sigemptyset(&sigIntHandler.sa_mask);
-  sigIntHandler.sa_flags = 0;
-
-  sigaction(SIGINT, &sigIntHandler, NULL);
 
   /* Setup */
   Config c;
@@ -151,5 +175,10 @@ int main(int argc, char** argv) {
   }
 
   std::cout<<"Starting server..."<<std::endl;
-  start_server(c);
+
+  initialize_server(c);
+  std::thread([] {
+    start_loop();
+  }).detach();
+  join_server(c);
 }
