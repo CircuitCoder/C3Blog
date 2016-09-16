@@ -121,7 +121,7 @@ namespace C3 {
       for(auto row = tot.begin(); row != tot.end(); ++row)
         scores[i++] = std::make_pair(row->second.size(), row->first);
 
-      sort(scores.begin(), scores.end());
+      sort(scores.begin(), scores.end(), std::greater<std::pair<uint64_t, uint64_t>>());
 
       std::list<std::pair<uint64_t, std::list<std::tuple<uint32_t, uint32_t, bool>>>> records;
       for(auto rec = scores.begin(); rec != scores.end(); ++rec)
