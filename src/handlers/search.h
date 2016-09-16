@@ -120,6 +120,11 @@ namespace C3 {
       }
 
       recJson["hits"] = hitsJson;
+      Json::Value tags(Json::arrayValue);
+      for(auto tag : p.tags) tags.append(tag);
+      recJson["tags"] = tags;
+      recJson["url"] = p.url;
+      recJson["updated"] = p.update_time;
       recordsJson.append(recJson);
 
       ++i;
