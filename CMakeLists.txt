@@ -26,8 +26,6 @@ include_directories(${LevelDB_INCLUDE})
 include_directories(${YamlCPP_INCLUDE})
 include_directories(${Discount_INCLUDE})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
 include_directories("${C3Blog_SOURCE_DIR}/src")
 include_directories(SYSTEM "${C3Blog_SOURCE_DIR}/include")
 
