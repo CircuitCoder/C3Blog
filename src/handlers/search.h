@@ -23,7 +23,7 @@ namespace C3 {
   }
 
   void handle_search_page(const crow::request &req, crow::response &res, std::string str, uint64_t page) {
-    auto records = search_index(URLEncoding::url_decode(str));
+    auto records = Index::search(URLEncoding::url_decode(str));
     Json::Value recordsJson(Json::arrayValue);
 
     auto rec = records.begin();

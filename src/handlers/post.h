@@ -9,6 +9,7 @@
 #include "mapper.h"
 #include "middleware.h"
 #include "config.h"
+#include "../indexer.h"
 #include "../feed.h"
 
 namespace C3 {
@@ -160,12 +161,11 @@ namespace C3 {
       add_url(p.url, id);
 
       //TODO: template
-      std::list<std::string> tags(p.tags.begin(), p.tags.end());
-
       //TODO: batch
-      add_entries(id, tags);
-
+      add_entries(id, std::list<std::string>(p.tags.begin(), p.tags.end()));
       Feed::invalidate();
+
+      Index::reindex(p);
 
       Json::Value v;
       v["id"] = (Json::UInt64) id;
@@ -231,6 +231,7 @@ namespace C3 {
       update_post(id, current);
 
       Feed::invalidate();
+      Index::reindex(current);
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {
@@ -268,6 +269,8 @@ namespace C3 {
       delete_post(id);
 
       Feed::invalidate();
+      clear_indexes(id);
+      Index::invalidate();
 
       res.end("{\"ok\":0}");
     } catch(StorageExcept &e) {

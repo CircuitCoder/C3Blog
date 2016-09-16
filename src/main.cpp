@@ -152,9 +152,9 @@ int main(int argc, char** argv) {
   setup_handlers(c);
   setup_middleware(c);
   setup_url_map();
-  setup_indexer(c);
   Auth::setupAuthors(c);
   Feed::setup(c);
+  Index::setup(c);
 
   bool validFlag = true;
 
@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
   }
 
   if(flag_reindex) {
-    reindex_all();
+    Index::reindex_all();
   }
 
   if(!validFlag) {
