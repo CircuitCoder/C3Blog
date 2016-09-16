@@ -124,7 +124,7 @@ namespace C3 {
       for(auto tag : p.tags) tags.append(tag);
       recJson["tags"] = tags;
       recJson["url"] = p.url;
-      recJson["updated"] = p.update_time;
+      recJson["updated"] = Json::UInt64(p.update_time);
       recordsJson.append(recJson);
 
       ++i;
