@@ -121,14 +121,13 @@ namespace C3 {
     uint64_t id;
     try {
       id = query_url(URLEncoding::url_decode(url));
+      return handle_post_read(req, res, id);
     } catch(MapperError e) {
       if(e == MapperError::UrlNotFound) {
         res.code = 404;
         res.end("404 Not Found");
       }
     }
-
-    return handle_post_read(req, res, id);
   }
 
   void handle_post_create(const crow::request &req, crow::response &res) {
