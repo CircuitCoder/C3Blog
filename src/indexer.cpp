@@ -154,7 +154,6 @@ namespace C3 {
         while(search_cache_list.size() >= search_cache_size) {
           // Pop the first element
           search_cache_store.erase(search_cache_list.front());
-          std::cout<<"Pop: "<<search_cache_list.front()<<std::endl;
           search_cache_list.pop_front();
         }
 

@@ -471,8 +471,6 @@ namespace C3 {
   void set_indexes(uint64_t post, const std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> &indexes) {
     leveldb::WriteBatch indexBatch;
 
-    std::cout<<"Indexing for: "<<post<<std::endl;
-
     std::string words;
     leveldb::Status s = wordsDB->Get(leveldb::ReadOptions(), std::to_string(post), &words);
     if(!s.ok()) {
@@ -491,8 +489,6 @@ namespace C3 {
         indexes<<occur->first<<' '<<(occur->second ? 't' : 'b')<<'\n';
       indexBatch.Put(it->first + ',' + std::to_string(post), indexes.str());
       curWords<<it->first<<'\n';
-
-      std::cout<<"Word: "<<it->first<<" -> "<<indexes.str()<<std::endl;
     }
 
     leveldb::Status is = indexDB->Write(leveldb::WriteOptions(), &indexBatch);
