@@ -49,7 +49,7 @@ namespace C3 {
 
       Json::Value recJson;
       Json::Value hitsJson(Json::arrayValue);
-      recJson["post_id"] = rec->first;
+      recJson["post_id"] = Json::Value::UInt64(rec->first);
       for(auto hit = rec->second.begin(); hit != rec->second.end(); ++hit) {
         Json::Value hitJson;
         hitJson["offset"] = std::get<0>(*hit);
@@ -111,7 +111,7 @@ namespace C3 {
 
     Json::Value root;
 
-    root["pages"] = ((uint64_t) records.size() + search_length - 1) / search_length;
+    root["pages"] = Json::Value::UInt64((records.size() + search_length - 1) / search_length);
     root["results"] = recordsJson;
 
     res.end(Json::writeString(wbuilder, root));
