@@ -46,6 +46,7 @@ namespace C3 {
       std::vector<uint32_t> lineEnds(1);
       lineEnds[0] = lineEnd;
       lineHits[0] = 0;
+      bool inbody = false;
 
       Json::Value recJson;
       Json::Value hitsJson(Json::arrayValue);
@@ -56,13 +57,16 @@ namespace C3 {
         hitJson["length"] = std::get<1>(*hit);
         hitJson["title"] = std::get<2>(*hit);
 
-        while(std::get<0>(*hit) > lineEnd) {
-          ++lineCount;
-          ++lineEnd;
-          while(lineEnd < p.content.length() && p.content[lineEnd] != '\n')
+        if(!std::get<2>(*hit)){
+          inbody = true;
+          while(std::get<0>(*hit) > lineEnd) {
+            ++lineCount;
             ++lineEnd;
-          lineEnds.push_back(lineEnd);
-          lineHits.push_back(0);
+            while(lineEnd < p.content.length() && p.content[lineEnd] != '\n')
+              ++lineEnd;
+            lineEnds.push_back(lineEnd);
+            lineHits.push_back(0);
+          }
         }
 
         ++lineHits[lineCount];
@@ -72,36 +76,48 @@ namespace C3 {
 
       ++lineCount;
 
-      uint32_t maxStart = 0;
-      if(search_preview < lineCount) {
-        uint32_t maxSum;
-        uint32_t sum = 0;
+      if(inbody) {
+        uint32_t maxStart = 0;
+        if(search_preview < lineCount) {
+          uint32_t maxSum;
+          uint32_t sum = 0;
 
-        for(uint32_t i = 0; i < search_preview ; ++i) {
-          sum += lineHits[i];
-        }
+          for(uint32_t i = 0; i < search_preview ; ++i) {
+            sum += lineHits[i];
+          }
 
-        maxSum = sum;
+          maxSum = sum;
 
-        for(uint32_t start = 1; start + search_preview <= lineCount; ++start) {
-          sum -= lineEnds[start - 1];
-          sum += lineEnds[start - 1 + search_preview];
-          if(sum > maxSum) {
-            maxSum = sum;
-            maxStart = start;
+          for(uint32_t start = 1; start + search_preview <= lineCount; ++start) {
+            sum -= lineEnds[start - 1];
+            sum += lineEnds[start - 1 + search_preview];
+            if(sum > maxSum) {
+              maxSum = sum;
+              maxStart = start;
+            }
           }
         }
+
+        uint32_t maxEnd = maxStart + search_preview - 1;
+        if(maxEnd >= lineCount) maxEnd = lineCount - 1;
+        while(maxEnd > maxStart && lineHits[maxEnd] == 0) --maxEnd;
+        while(maxStart < maxEnd && lineHits[maxStart] == 0) ++maxStart;
+
+        const uint32_t startIndex = maxStart == 0 ? 0 : lineEnds[maxStart-1] +1;
+        const uint32_t endIndex = lineEnds[maxEnd];
+
+        recJson["preview"] = p.content.substr(startIndex, endIndex - startIndex);
+      } else { // Only in title
+        uint32_t currentLine = 0;
+        uint32_t ptr = 0;
+        while(ptr < p.content.size() && currentLine < search_preview) {
+          while(ptr < p.content.size() && p.content[ptr] != '\n') ++ptr;
+          ++currentLine;
+          ++ptr;
+        }
+
+        recJson["preview"] = p.content.substr(0, ptr - 1);
       }
-
-      uint32_t maxEnd = maxStart + search_preview - 1;
-      if(maxEnd >= lineCount) maxEnd = lineCount - 1;
-      while(maxEnd > maxStart && lineHits[maxEnd] == 0) --maxEnd;
-      while(maxStart < maxEnd && lineHits[maxStart] == 0) ++maxStart;
-
-      const uint32_t startIndex = maxStart == 0 ? 0 : lineEnds[maxStart-1] +1;
-      const uint32_t endIndex = lineEnds[maxEnd];
-
-      recJson["preview"] = p.content.substr(startIndex, endIndex - startIndex);
 
       recJson["hits"] = hitsJson;
       recordsJson.append(recJson);

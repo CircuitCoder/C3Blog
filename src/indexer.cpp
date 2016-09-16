@@ -78,7 +78,7 @@ namespace C3 {
         for(auto it = titleWords.begin(); it != titleWords.end(); ++it)
           map[it->word].emplace_back(it->offset, true);
         for(auto it = bodyWords.begin(); it != bodyWords.end(); ++it)
-          map[it->word].emplace_back(it->offset, true);
+          map[it->word].emplace_back(it->offset, false);
 
         return map;
       }
