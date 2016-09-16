@@ -103,11 +103,26 @@ void start_loop() {
         _app->stop();
         break;
       }
+    } if(segs.front() == "invalidate") {
+      if(segs.size() > 2) std::cout<<"Invalid command: \"invalidate\" takes 0 or 1 argument"<<std::endl;
+      else if(segs.size() == 1) {
+        Index::invalidate();
+        Feed::invalidate();
+      } else {
+        segs.pop_front();
+        if(segs.front() == "feed")
+          Feed::invalidate();
+        else if(segs.front() == "index")
+          Index::invalidate();
+        else
+          std::cout<<"Invalid target: \""<<segs.front()<<"\""<<std::endl;
+      }
     } else if(segs.front() == "help") {
       if(segs.size() != 1) std::cout<<"Invalid command: \"help\" takes no argument"<<std::endl;
       else {
         std::cout<<"Available commands:"<<std::endl
-          <<"stop"<<"\t"<<"Stops the server"<<std::endl;
+          <<"stop"<<"\t\t\t"<<"Stops the server"<<std::endl
+          <<"invalidate [feed|index]"<<"\t"<<"Invalidate caches"<<std::endl;
       }
     } else {
       std::cout<<"Unknown command: \""<<segs.front()<<"\""<<std::endl;
