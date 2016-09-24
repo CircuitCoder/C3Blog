@@ -139,8 +139,15 @@ int main(int argc, char** argv) {
     ("check-authors", "Perform author check before server startup")
     ("reindex,R", "Force reindex at startup");
   po::variables_map opts;
-  po::store(po::parse_command_line(argc, argv, desc), opts);
-  po::notify(opts);
+
+  try {
+    po::store(po::parse_command_line(argc, argv, desc), opts);
+    po::notify(opts);
+  } catch(po::error &e) {
+    std::cout<<"Error parsing options: "<<e.what()<<std::endl<<std::endl;
+    std::cout<<desc<<std::endl;
+    return 0;
+  }
 
   if(opts.count("help")) {
     std::cout<<desc<<std::endl;
