@@ -33,7 +33,7 @@ namespace C3 {
       ++rec;
     }
 
-    int i = 0;
+    uint32_t i = 0;
 
     for(; rec != records.end() && i < search_length; ++rec) {
 
@@ -51,10 +51,26 @@ namespace C3 {
       Json::Value recJson;
       Json::Value hitsJson(Json::arrayValue);
       recJson["post_id"] = Json::Value::UInt64(rec->first);
+
+      uint32_t offsetPtr = 0;
+      uint32_t offsetUTF8 = 0;
+
       for(auto hit = rec->second.begin(); hit != rec->second.end(); ++hit) {
         Json::Value hitJson;
-        hitJson["offset"] = std::get<0>(*hit);
-        hitJson["length"] = std::get<1>(*hit);
+        uint32_t offsetAscii = std::get<0>(*hit);
+
+        while(offsetPtr < offsetAscii)
+          if((p.content[offsetPtr++] & 0xC0) != 0x80) ++offsetUTF8;
+
+        uint32_t lengthAscii = std::get<1>(*hit);
+        uint32_t lengthPtr = 0;
+        uint32_t lengthUTF8 = 0;
+
+        while(lengthPtr < lengthAscii)
+          if((p.content[offsetPtr + (lengthPtr++)] & 0xC0) != 0x80) ++lengthUTF8;
+
+        hitJson["offset"] = offsetUTF8;
+        hitJson["length"] = lengthUTF8;
         hitJson["title"] = std::get<2>(*hit);
 
         if(!std::get<2>(*hit)){
