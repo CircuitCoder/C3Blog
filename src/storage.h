@@ -7,9 +7,12 @@
 #include <unordered_map>
 #include <leveldb/db.h>
 #include <leveldb/comparator.h>
-#include <json/json.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 #include "util.h"
+
+namespace rj = rapidjson;
 
 namespace C3 {
   enum class StorageExcept {
@@ -42,7 +45,8 @@ namespace C3 {
     Post(const std::string &json, const std::string &uident);
 
     std::string to_json(void) const;
-    Json::Value to_json_obj(void) const;
+
+    void write_json(rj::Writer<rj::StringBuffer> &, bool = true) const;
   };
 
   struct Comment {
@@ -61,7 +65,8 @@ namespace C3 {
     Comment(const std::string &json, const std::string &uident);
 
     std::string to_json(void) const;
-    Json::Value to_json_obj(void) const;
+
+    void write_json(rj::Writer<rj::StringBuffer> &, bool = true) const;
   };
 
   struct User {
@@ -87,7 +92,8 @@ namespace C3 {
     User(const std::string &json);
 
     std::string to_json(void) const;
-    Json::Value to_json_obj(void) const;
+
+    void write_json(rj::Writer<rj::StringBuffer> &, bool = true) const;
 
     std::string getKey(void) const {
       if(type == UserType::uGoogle)

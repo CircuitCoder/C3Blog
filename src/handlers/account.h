@@ -1,18 +1,19 @@
 #pragma once
 
 #include <crow.h>
-#include <json/json.h>
 #include <curl/curl.h>
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <thread>
 
 #include "auth.h"
 #include "util.h"
 #include "config.h"
 
-namespace C3 {
+namespace rj = rapidjson;
 
-  extern Json::StreamWriterBuilder wbuilder;
-  extern Json::CharReaderBuilder rbuilder;
+namespace C3 {
 
   // 0 for none
   // 1 for http
@@ -44,13 +45,13 @@ namespace C3 {
   }
   
   void handle_account_login(const crow::request &req, crow::response &res) {
-    Json::Value body;
-    if(!parseFromString(rbuilder, req.body, &body)
-        || !body.isObject()
-        || !body.isMember("token")
-        || !body["token"].isString()
-        || !body.isMember("sub")
-        || !body["sub"].isString()) {
+    rj::Document body;
+    if(body.Parse(req.body).HasParseError()
+        || !body.IsObject()
+        || !body.HasMember("token")
+        || !body["token"].IsString()
+        || !body.HasMember("sub")
+        || !body["sub"].IsString()) {
       res.code = 400;
       res.end("400 Bad Request");
       return;
@@ -59,16 +60,21 @@ namespace C3 {
     context * ctx = (context *) req.middleware_context;
     Middleware::context &cookieCtx = ctx->get<Middleware>();
 
-    std::string token = body["token"].asString();
-    std::string sub = body["sub"].asString();
+    std::string token = body["token"].GetString();
+    std::string sub = body["sub"].GetString();
 
     if(cookieCtx.session.signedIn && cookieCtx.session.uident == std::string("google,") + sub) {
       res.code = 200;
-      Json::Value v;
 
-      v["valid"] = true;
-      v["isAuthor"] = cookieCtx.session.isAuthor;
-      res.end(Json::writeString(wbuilder, v));
+      rj::StringBuffer result;
+      rj::Writer<rj::StringBuffer> writer(result);
+
+      writer.Key("valid");
+      writer.Bool(true);
+      writer.Key("isAuthor");
+      writer.Bool(cookieCtx.session.isAuthor);
+
+      res.end(result.GetString());
       return;
     }
 
@@ -103,15 +109,15 @@ namespace C3 {
 
         // No user database for right now
 
-        Json::Value jres;
-        if(!parseFromString(rbuilder, buf, &jres) || !jres.isObject()) {
+        rj::Document jres;
+        if(jres.Parse(buf).HasParseError() || !jres.IsObject()) {
           res.code = 500;
           res.end("500 Internal Error");
           return;
         }
 
-        if(!jres.isMember("email") || !jres["email"].isString()) {
-          if(jres.isMember("error_description")) {
+        if(!jres.HasMember("email") || !jres["email"].IsString()) {
+          if(jres.HasMember("error_description")) {
             res.code = 403;
             res.set_header("Content-Type", "application/json; charset=utf-8");
             res.end(buf);
@@ -123,20 +129,24 @@ namespace C3 {
           }
         }
 
-        if(!jres.isMember("sub") || !jres["sub"].isString() || jres["sub"].asString() != sub) {
+        if(!jres.HasMember("sub") || !jres["sub"].IsString() || jres["sub"].GetString() != sub) {
           res.code = 403;
           res.set_header("Content-Type", "application/json; charset=utf-8");
           res.end("{\"error_description\":\"Sub mismatch\"}");
           return;
         }
 
-        std::string email = jres["email"].asString();
+        std::string email = jres["email"].GetString();
 
         User u(User::UserType::uGoogle,
             sub,
-            jres.isMember("name") && jres["name"].isString() ? jres["name"].asString() : "",
+            jres.HasMember("name")
+              && jres["name"].IsString()
+              ? jres["name"].GetString() : "",
             email,
-            jres.isMember("picture") && jres["picture"].isString() ? jres["picture"].asString() : "");
+            jres.HasMember("picture")
+              && jres["picture"].IsString()
+              ? jres["picture"].GetString() : "");
 
         if(!update_user(u)) {
           res.code = 500;
@@ -150,12 +160,16 @@ namespace C3 {
         cookieCtx.session.uident = std::string("google,") + sub;
         cookieCtx.saveSession = true;
 
-        Json::Value v;
+        rj::StringBuffer result;
+        rj::Writer<rj::StringBuffer> writer(result);
 
-        v["valid"] = true;
-        v["isAuthor"] = cookieCtx.session.isAuthor;
+        writer.Key("valid");
+        writer.Bool(true);
+        writer.Key("isAuthor");
+        writer.Bool(cookieCtx.session.isAuthor);
 
-        res.end(Json::writeString(wbuilder, v));
+        res.end(result.GetString());
+        return;
       } else {
         res.code = 500;
         res.end("500 Internal Error");

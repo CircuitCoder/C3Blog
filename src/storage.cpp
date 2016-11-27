@@ -3,6 +3,7 @@
 #include "mapper.h"
 
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <cassert>
 #include <cstdarg>
@@ -10,8 +11,8 @@
 #include <leveldb/db.h>
 #include <leveldb/cache.h>
 #include <leveldb/write_batch.h>
-#include <json/json.h>
 #include <boost/filesystem.hpp>
+#include <rapidjson/document.h>
 
 #define INIT_DB(db) \
     leveldb::Options db##Opt; \
@@ -23,10 +24,6 @@
     assert(db##Status.ok()); \
 
 namespace C3 {
-
-  extern Json::StreamWriterBuilder wbuilder;
-  extern Json::CharReaderBuilder rbuilder;
-
   bool _entryEquals(const std::string &entry, const std::string &key) {
     auto eit = entry.begin();
     auto kit = key.begin();
@@ -67,21 +64,19 @@ namespace C3 {
         uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time), update_time(update_time) {}
 
   Post::Post(const std::string &json) {
-    Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
+    rj::Document doc;
+    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    std::vector<std::string> tags(r["tags"].size());
-    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
-      tags[it.index()] = it->asString();
-    }
+    tags.resize(doc["tags"].Size());
+    for(auto &tag : doc["tags"].GetArray())
+      tags.push_back(tag.GetString());
 
-    uident = r["uident"].asString();
-    url = r["url"].asString();
-    topic = r["topic"].asString();
-    content = r["content"].asString();
-    this->tags = tags;
-    post_time = r["post_time"].asUInt64();
-    update_time = r["update_time"].asUInt64();
+    uident = doc["uident"].GetString();
+    url = doc["url"].GetString();
+    topic = doc["topic"].GetString();
+    content = doc["content"].GetString();
+    post_time = doc["post_time"].GetUint64();
+    update_time = doc["update_time"].GetUint64();
 
     // Not updated yet. For backward compatibility
     if(update_time == 0) update_time = post_time;
@@ -89,38 +84,47 @@ namespace C3 {
 
   Post::Post(const std::string &json, const std::string &uident) :
         uident(uident), post_time(current_time()) {
-    Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
+    rj::Document doc;
+    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    std::vector<std::string> tags(r["tags"].size());
-    for(auto it = r["tags"].begin(); it != r["tags"].end(); ++it) {
-      tags[it.index()] = it->asString();
-    }
+    tags.resize(doc["tags"].Size());
+    for(auto &tag : doc["tags"].GetArray())
+      tags.push_back(tag.GetString());
 
-    url = r["url"].asString();
-    topic = r["topic"].asString();
-    content = r["content"].asString();
-    this->tags = tags;
-    this->update_time = this->post_time;
+    url = doc["url"].GetString();
+    topic = doc["topic"].GetString();
+    content = doc["content"].GetString();
+    update_time = post_time;
   }
 
-  Json::Value Post::to_json_obj(void) const {
-    Json::Value r;
-    r["uident"] = uident;
-    r["url"] = url;
-    r["topic"] = topic;
-    r["content"] = content;
-    r["post_time"] = (Json::UInt64) post_time;
-    r["update_time"] = (Json::UInt64) update_time;
-    Json::Value v;
-    for(auto e : tags) v.append(e);
-    r["tags"] = v;
+  void Post::write_json(rj::Writer<rj::StringBuffer> &w, bool border) const {
+    if(border) w.StartObject();
 
-    return r;
+    w.Key("uident");
+    w.String(uident);
+    w.Key("url");
+    w.String(url);
+    w.Key("topic");
+    w.String(topic);
+    w.Key("content");
+    w.String(content);
+    w.Key("post_time");
+    w.Uint64(post_time);
+    w.Key("update_time");
+    w.Uint64(update_time);
+
+    w.StartArray();
+    for(auto &tag : tags) w.String(tag);
+    w.EndArray();
+
+    if(border) w.EndObject();
   }
 
   std::string Post::to_json(void) const {
-    return Json::writeString(wbuilder, this->to_json_obj());
+    rj::StringBuffer buf;
+    rj::Writer<rj::StringBuffer> w(buf);
+    write_json(w);
+    return buf.GetString();
   }
 
   Comment::Comment(
@@ -130,32 +134,39 @@ namespace C3 {
         uident(uident), content(content), comment_time(comment_time) { }
 
   Comment::Comment(const std::string &json) {
-    Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
+    rj::Document doc;
+    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    uident = r["uident"].asString();
-    content = r["content"].asString();
-    comment_time = r["comment_time"].asUInt64();
+    uident = doc["uident"].GetString();
+    content = doc["content"].GetString();
+    comment_time = doc["comment_time"].GetUint64();
   }
 
   Comment::Comment(const std::string &json, const std::string &uident) :
         uident(uident), comment_time(current_time()) {
-    Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
+    rj::Document doc;
+    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    content = r["content"].asString();
+    content = doc["content"].GetString();
   }
 
-  Json::Value Comment::to_json_obj(void) const {
-    Json::Value r;
-    r["uident"] = uident;
-    r["content"] = content;
+  void Comment::write_json(rj::Writer<rj::StringBuffer> &w, bool border) const {
+    if(border) w.StartObject();
 
-    return r;
+    w.Key("uident");
+    w.String(uident);
+    w.Key("content");
+    w.String(content);
+    w.Key("comment_time");
+    w.Uint64(comment_time);
+    if(border) w.EndObject();
   }
 
   std::string Comment::to_json(void) const {
-    return Json::writeString(wbuilder, this->to_json_obj());
+    rj::StringBuffer buf;
+    rj::Writer<rj::StringBuffer> w(buf);
+    write_json(w);
+    return buf.GetString();
   }
 
   User::User(
@@ -167,35 +178,44 @@ namespace C3 {
         type(type), id(id), name(name), email(email), avatar(avatar) { }
 
   User::User(const std::string &json) {
-    Json::Value r;
-    if(!parseFromString(rbuilder, json, &r)) throw StorageExcept::ParseError;
+    rj::Document doc;
+    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
     // Type
-    std::string typestr = r["type"].asString();
+    std::string typestr = doc["type"].GetString();
     if(typestr == "google") type = User::UserType::uGoogle;
     else type = User::UserType::uUnknown;
 
-    id = r["id"].asString();
-    name = r["name"].asString();
-    email = r["email"].asString();
-    avatar = r["avatar"].asString();
+    id = doc["id"].GetString();
+    name = doc["name"].GetString();
+    email = doc["email"].GetString();
+    avatar = doc["avatar"].GetString();
   }
 
-  Json::Value User::to_json_obj(void) const {
-    Json::Value r;
-    if(type == User::UserType::uGoogle) r["type"] = "google";
-    else r["type"] = "unknown";
+  void User::write_json(rj::Writer<rj::StringBuffer> &w, bool border) const {
+    if(border) w.StartObject();
 
-    r["id"] = id;
-    r["name"] = name;
-    r["email"] = email;
-    r["avatar"] = avatar;
+    w.Key("type");
+    if(type == User::UserType::uGoogle) w.String("google");
+    else w.String("unknown");
 
-    return r;
+    w.Key("id");
+    w.String(id);
+    w.Key("name");
+    w.String(name);
+    w.Key("email");
+    w.String(email);
+    w.Key("avatar");
+    w.String(avatar);
+
+    if(border) w.EndObject();
   }
 
   std::string User::to_json(void) const {
-    return Json::writeString(wbuilder, this->to_json_obj());
+    rj::StringBuffer buf;
+    rj::Writer<rj::StringBuffer> w(buf);
+    write_json(w);
+    return buf.GetString();
   }
 
   CommaSepComparator::CommaSepComparator(std::initializer_list<Limitor> lims) :
@@ -406,13 +426,13 @@ namespace C3 {
 
   /* Entries */
   void _generate_remove_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
-    for(auto it = list.begin(); it != list.end(); ++it)
-      batch.Delete(*it + "," + std::to_string(id));
+    for(auto &it : list)
+      batch.Delete(it + "," + std::to_string(id));
   }
 
   void _generate_add_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
-    for(auto it = list.begin(); it != list.end(); ++it)
-      batch.Put(*it + "," + std::to_string(id), std::to_string(id));
+    for(auto &it : list)
+      batch.Put(it + "," + std::to_string(id), std::to_string(id));
   }
 
   void remove_entries(const uint64_t &id, const std::list<std::string> &list) {
@@ -483,12 +503,12 @@ namespace C3 {
     }
 
     std::stringstream curWords;
-    for(auto it = indexes.begin(); it != indexes.end(); ++it) {
+    for(auto &it : indexes) {
       std::stringstream indexes;
-      for(auto occur = it->second.begin(); occur != it->second.end(); ++occur)
-        indexes<<occur->first<<' '<<(occur->second ? 't' : 'b')<<'\n';
-      indexBatch.Put(it->first + ',' + std::to_string(post), indexes.str());
-      curWords<<it->first<<'\n';
+      for(auto &occur : it.second)
+        indexes<<occur.first<<' '<<(occur.second ? 't' : 'b')<<'\n';
+      indexBatch.Put(it.first + ',' + std::to_string(post), indexes.str());
+      curWords<<it.first<<'\n';
     }
 
     leveldb::Status is = indexDB->Write(leveldb::WriteOptions(), &indexBatch);

@@ -3,7 +3,6 @@
 #include <random>
 #include <string>
 #include <list>
-#include <json/json.h>
 
 namespace C3 {
   class Randomizer {
@@ -24,8 +23,6 @@ namespace C3 {
   std::string random_chars(int);
 
   std::string markdown(std::string);
-
-  bool parseFromString(const Json::CharReaderBuilder &, const std::string &, Json::Value *v);
 
   namespace URLEncoding {
     std::string url_encode(std::string str);

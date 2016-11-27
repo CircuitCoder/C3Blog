@@ -56,8 +56,8 @@ namespace C3 {
     void reindex_all(void) {
       bool dummy;
       auto posts = list_posts(0, -1, dummy);
-      for(auto p = posts.begin(); p != posts.end(); ++p)
-        reindex(*p);
+      for(auto &p : posts)
+        reindex(p);
     }
 
     void invalidate() {
@@ -75,10 +75,10 @@ namespace C3 {
         jieba->CutForSearch(body, bodyWords, true);
         std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> map;
 
-        for(auto it = titleWords.begin(); it != titleWords.end(); ++it)
-          map[it->word].emplace_back(it->offset, true);
-        for(auto it = bodyWords.begin(); it != bodyWords.end(); ++it)
-          map[it->word].emplace_back(it->offset, false);
+        for(auto &seg : titleWords)
+          map[seg.word].emplace_back(seg.offset, true);
+        for(auto &seg : bodyWords)
+          map[seg.word].emplace_back(seg.offset, false);
 
         return map;
       }
@@ -96,19 +96,23 @@ namespace C3 {
 
       std::unordered_map<uint64_t, std::list<std::tuple<uint32_t, uint32_t, bool>>> tot;
 
-      for(auto seg = segs.begin(); seg != segs.end(); ++seg) {
+      for(auto &seg : segs) {
         std::unordered_map<uint64_t, std::list<std::tuple<uint32_t, uint32_t, bool>>> curRes;
 
         std::vector<std::string> words;
-        jieba->Cut(*seg, words, true);
-        
-        for(auto word = words.begin(); word != words.end(); ++word) {
-          auto store = query_indexes(*word);
+        jieba->Cut(seg, words, true);
 
-          if(word == words.begin()) {
-            for(auto rec = store.begin(); rec != store.end(); ++rec)
-              for(auto occur = rec->second.begin(); occur != rec->second.end(); ++occur)
-                curRes[rec->first].emplace_back(occur->first, word->length(), occur->second);
+        bool isBegin = false;
+        
+        for(auto &word : words) {
+          auto store = query_indexes(word);
+
+          if(isBegin) {
+            isBegin = false;
+            for(auto &rec : store)
+              for(auto &occur : rec.second)
+                curRes[rec.first]
+                  .emplace_back(occur.first, word.length(), occur.second);
           } else for(auto res = curRes.begin(); res != curRes.end(); ++res) {
             while(res != curRes.end() && store.count(res->first) == 0)
               res = curRes.erase(res);
@@ -120,7 +124,7 @@ namespace C3 {
 
             for(auto occur = res->second.begin(); occur != res->second.end(); ++occur) {
               while(_index_cmp_pair(*storeOccurIter, *occur)) {
-                res->second.emplace(occur, storeOccurIter->first, word->length(), storeOccurIter->second);
+                res->second.emplace(occur, storeOccurIter->first, word.length(), storeOccurIter->second);
                 ++storeOccurIter;
                 if(storeOccurIter == storeOccurs.end()) break;
               }
@@ -128,26 +132,26 @@ namespace C3 {
             }
 
             for(;storeOccurIter != storeOccurs.end(); ++storeOccurIter)
-              res->second.emplace_back(storeOccurIter->first, word->length(), storeOccurIter->second);
+              res->second.emplace_back(storeOccurIter->first, word.length(), storeOccurIter->second);
           }
         }
 
-        for(auto res = curRes.begin(); res != curRes.end(); ++res) {
-          if(tot.count(res->first) == 0) tot.emplace(res->first, std::move(res->second));
-          else tot[res->first].merge(res->second, _index_cmp);
+        for(auto &res : curRes) {
+          if(tot.count(res.first) == 0) tot.emplace(res.first, std::move(res.second));
+          else tot[res.first].merge(res.second, _index_cmp);
         }
       }
 
       std::vector<std::pair<uint64_t, uint64_t>> scores(tot.size());
       int i = 0;
-      for(auto row = tot.begin(); row != tot.end(); ++row)
-        scores[i++] = std::make_pair(row->second.size(), row->first);
+      for(auto &row : tot)
+        scores[i++] = std::make_pair(row.second.size(), row.first);
 
       sort(scores.begin(), scores.end(), std::greater<std::pair<uint64_t, uint64_t>>());
 
       search_result records;
-      for(auto rec = scores.begin(); rec != scores.end(); ++rec)
-        records.emplace_back(rec->second, std::move(tot[rec->second]));
+      for(auto &rec : scores)
+        records.emplace_back(rec.second, std::move(tot[rec.second]));
 
       lock.lock();
       if(search_cache_store.count(target) == 0) {

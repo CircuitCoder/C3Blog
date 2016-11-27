@@ -17,17 +17,6 @@ using namespace C3;
 typedef crow::App<crow::CookieParser, Middleware> App;
 std::unique_ptr<App> _app;
 
-namespace C3 {
-  extern Json::StreamWriterBuilder wbuilder;
-  extern Json::CharReaderBuilder rbuilder;
-}
-
-void setup_globals() {
-  rbuilder["collectComments"] = false;
-  wbuilder["commentStyle"] = "None";
-  wbuilder["indentation"] = "";
-}
-
 void join_server(const Config &c) {
   if(c.server_multithreaded) {
     _app->port(c.server_port).multithreaded().run();
@@ -170,7 +159,6 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  setup_globals();
   setup_handlers(c);
   setup_middleware(c);
   setup_url_map();

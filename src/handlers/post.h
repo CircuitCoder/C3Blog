@@ -3,7 +3,8 @@
 #include <list>
 #include <sstream>
 #include <crow.h>
-#include <json/json.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 #include "storage.h"
 #include "mapper.h"
@@ -12,10 +13,11 @@
 #include "../indexer.h"
 #include "../feed.h"
 
+namespace rj = rapidjson;
+
 namespace C3 {
 
   int post_per_page = 10; // Post per page
-  extern Json::StreamWriterBuilder wbuilder;
 
   void setup_post_handler(const Config &c) {
     post_per_page = c.app_pageLength;
@@ -41,23 +43,33 @@ namespace C3 {
 
     bool hasNext;
 
-    std::list<Post> p = list_posts(offset, count, hasNext);
+    std::list<Post> posts = list_posts(offset, count, hasNext);
     // TODO: total count
-    Json::Value posts(Json::arrayValue);
-    for(auto i = p.begin(); i != p.end(); ++i) {
-      Json::Value e;
-      e["url"] = i->url;
-      e["topic"] = i->topic;
-      e["post_time"] = (Json::UInt64) i->post_time;
 
-      posts.append(e);
+    rj::StringBuffer result;
+    rj::Writer<rj::StringBuffer> writer(result);
+
+    writer.StartObject();
+    writer.Key("posts");
+    writer.StartArray();
+
+    for(auto &p : posts) {
+      writer.StartObject();
+      writer.Key("url");
+      writer.String(p.url);
+      writer.Key("topic");
+      writer.String(p.topic);
+      writer.Key("post_time");
+      writer.Uint64(p.post_time);
+      writer.EndObject();
     }
 
-    Json::Value v;
-    v["posts"] = posts;
-    v["hasNext"] = hasNext;
+    writer.EndArray();
+    writer.Key("hasNext");
+    writer.Bool(hasNext);
+    writer.EndObject();
 
-    res.end(Json::writeString(wbuilder, v));
+    res.end(result.GetString());
   }
 
   void handle_post_tag_list(const crow::request &req, crow::response &res, const std::string &tag) {
@@ -72,37 +84,50 @@ namespace C3 {
 
     std::list<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext);
 
-    Json::Value posts(Json::arrayValue);
-    for(auto i = ids.begin(); i != ids.end(); ++i) {
-      Post p = get_post(*i);
-      Json::Value e;
-      e["url"] = p.url;
-      e["topic"] = p.topic;
-      e["post_time"] = (Json::UInt64) p.post_time;
+    rj::StringBuffer result;
+    rj::Writer<rj::StringBuffer> writer(result);
 
-      posts.append(e);
+    writer.StartObject();
+    writer.Key("posts");
+    writer.StartArray();
+
+    for(auto &i : ids) {
+      Post p = get_post(i);
+      writer.Key("url");
+      writer.String(p.url);
+      writer.Key("topic");
+      writer.String(p.topic);
+      writer.Key("post_time");
+      writer.Uint64(p.post_time);
     }
 
-    Json::Value v;
-    v["posts"] = posts;
-    v["hasNext"] = hasNext;
+    writer.EndArray();
+    writer.Key("hasNext");
+    writer.Bool(hasNext);
+    writer.EndObject();
 
-    res.end(Json::writeString(wbuilder, v));
+    res.end(result.GetString());
   }
 
   void handle_post_read(const crow::request &req, crow::response &res, uint64_t id) {
     try {
       Post p  = get_post(id);
-      Json::Value v = p.to_json_obj();
+      rj::StringBuffer result;
+      rj::Writer<rj::StringBuffer> writer(result);
+      
+      writer.StartObject();
+      p.write_json(writer, false);
 
       try {
         User u = get_user(p.uident);
-        v["user"] = u.to_json_obj();
+        writer.Key("user");
+        u.write_json(writer);
       } catch(StorageExcept e) {
         CROW_LOG_WARNING << "No such user: " << p.uident;
       }
 
-      res.end(Json::writeString(wbuilder, v));
+      writer.EndObject();
+      res.end(result.GetString());
       return;
     } catch(StorageExcept &e) {
       if(e == StorageExcept::NotFound) {
@@ -167,9 +192,9 @@ namespace C3 {
 
       Index::reindex(p);
 
-      Json::Value v;
-      v["id"] = (Json::UInt64) id;
-      res.end(Json::writeString(wbuilder, v));
+      res.write("{\"id\":");
+      res.write(std::to_string(id));
+      res.end("}");
     } catch(...) {
       res.code = 500;
       res.end("500 Internal Error");

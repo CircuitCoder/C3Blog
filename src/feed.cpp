@@ -82,32 +82,32 @@ namespace C3 {
       updated_e->SetText(durStr.c_str());
       root->InsertEndChild(updated_e);
 
-      for(auto i = posts.begin(); i != posts.end(); ++i) {
+      for(auto &i : posts) {
         auto entry_e = doc.NewElement("entry");
         
         auto entry_id_e = doc.NewElement("id");
-        entry_id_e->SetText(("c3blog://post/" + url + std::to_string(i->post_time)).c_str());
+        entry_id_e->SetText(("c3blog://post/" + url + std::to_string(i.post_time)).c_str());
         entry_e->InsertEndChild(entry_id_e);
 
         auto entry_title_e = doc.NewElement("title");
-        entry_title_e->SetText(i->topic.c_str());
+        entry_title_e->SetText(i.topic.c_str());
         entry_e->InsertEndChild(entry_title_e);
 
         auto entry_content_e = doc.NewElement("content");
-        entry_content_e->SetText(markdown(i->content).c_str());
+        entry_content_e->SetText(markdown(i.content).c_str());
         entry_content_e->SetAttribute("type", "html");
         entry_e->InsertEndChild(entry_content_e);
 
         auto entry_updated_e = doc.NewElement("updated");
-        entry_updated_e->SetText(generate_rfc3999(i->update_time).c_str());
+        entry_updated_e->SetText(generate_rfc3999(i.update_time).c_str());
         entry_e->InsertEndChild(entry_updated_e);
 
         auto entry_published_e = doc.NewElement("published");
-        entry_published_e->SetText(generate_rfc3999(i->update_time).c_str());
+        entry_published_e->SetText(generate_rfc3999(i.update_time).c_str());
         entry_e->InsertEndChild(entry_published_e);
 
         auto entry_link_e = doc.NewElement("link");
-        entry_link_e->SetAttribute("href", (url + "/" + i->url).c_str());
+        entry_link_e->SetAttribute("href", (url + "/" + i.url).c_str());
         entry_link_e->SetAttribute("rel", "alternate");
         entry_e->InsertEndChild(entry_link_e);
 
@@ -115,7 +115,7 @@ namespace C3 {
         auto entry_author_name_e = doc.NewElement("name");
 
         try {
-          User author = get_user(i->uident);
+          User author = get_user(i.uident);
           auto entry_author_email_e = doc.NewElement("email");
           entry_author_name_e->SetText(author.name.c_str());
           entry_author_email_e->SetText(author.email.c_str());
@@ -158,15 +158,15 @@ namespace C3 {
       auto root = doc.NewElement("urlset");
       root->SetAttribute("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9");
 
-      for(auto p = posts.begin(); p != posts.end(); ++p) {
+      for(auto &p : posts) {
         auto url_e = doc.NewElement("url");
 
         auto loc_e = doc.NewElement("loc");
-        loc_e->SetText((url + p->url).c_str());
+        loc_e->SetText((url + p.url).c_str());
         url_e->InsertEndChild(loc_e);
 
         auto lastmod_e = doc.NewElement("lastmod");
-        lastmod_e->SetText(generate_rfc3999(p->update_time).c_str());
+        lastmod_e->SetText(generate_rfc3999(p.update_time).c_str());
         url_e->InsertEndChild(lastmod_e);
 
         root->InsertEndChild(url_e);
