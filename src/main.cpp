@@ -110,11 +110,12 @@ void start_loop() {
       if(segs.size() != 1) std::cout<<"Invalid command: \"help\" takes no argument"<<std::endl;
       else {
         std::cout<<"Available commands:"<<std::endl
-          <<"stop"<<"\t\t\t"<<"Stops the server"<<std::endl
-          <<"invalidate [feed|index]"<<"\t"<<"Invalidate caches"<<std::endl;
+          <<"stop"<<"\t\t\t"<<"Stops the server."<<std::endl
+          <<"invalidate [feed|index]"<<"\t"<<"Invalidate caches."<<std::endl
+          <<"help"<<"\t\t\t"<<"Print this message."<<std::endl;
       }
     } else {
-      std::cout<<"Unknown command: \""<<segs.front()<<"\""<<std::endl;
+      std::cout<<"Unknown command: \""<<segs.front()<<"\". Type \"help\" for available commands."<<std::endl;
     }
   }
 }
@@ -187,6 +188,8 @@ int main(int argc, char** argv) {
   std::cout<<"Starting server..."<<std::endl;
 
   initialize_server(c);
+
+  std::cout<<"Server listening on port "<<c.server_port<<std::endl;
   std::thread([] {
     start_loop();
   }).detach();
