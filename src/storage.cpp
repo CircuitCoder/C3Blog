@@ -67,7 +67,7 @@ namespace C3 {
     rj::Document doc;
     if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    tags.resize(doc["tags"].Size());
+    tags.reserve(doc["tags"].Size());
     for(auto &tag : doc["tags"].GetArray())
       tags.push_back(tag.GetString());
 
@@ -87,7 +87,7 @@ namespace C3 {
     rj::Document doc;
     if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
-    tags.resize(doc["tags"].Size());
+    tags.reserve(doc["tags"].Size());
     for(auto &tag : doc["tags"].GetArray())
       tags.push_back(tag.GetString());
 
@@ -113,6 +113,7 @@ namespace C3 {
     w.Key("update_time");
     w.Uint64(update_time);
 
+    w.Key("tags");
     w.StartArray();
     for(auto &tag : tags) w.String(tag);
     w.EndArray();

@@ -93,12 +93,14 @@ namespace C3 {
 
     for(auto &i : ids) {
       Post p = get_post(i);
+      writer.StartObject();
       writer.Key("url");
       writer.String(p.url);
       writer.Key("topic");
       writer.String(p.topic);
       writer.Key("post_time");
       writer.Uint64(p.post_time);
+      writer.EndObject();
     }
 
     writer.EndArray();
