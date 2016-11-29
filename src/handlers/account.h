@@ -71,10 +71,12 @@ namespace C3 {
       rj::StringBuffer result;
       rj::Writer<rj::StringBuffer> writer(result);
 
+      writer.StartObject();
       writer.Key("valid");
       writer.Bool(true);
       writer.Key("isAuthor");
       writer.Bool(cookieCtx.session.isAuthor);
+      writer.EndObject();
 
       res.end(result.GetString());
       return;
