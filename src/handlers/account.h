@@ -23,6 +23,8 @@ namespace C3 {
   std::string proxy;
 
   void setup_account_handler(const Config &c) {
+    curl_global_init(CURL_GLOBAL_ALL);
+
     if(c.proxy.compare(0, 9, "socks4://") == 0) {
       proxy = c.proxy.substr(9);
       proxy_type = 2;
@@ -163,10 +165,12 @@ namespace C3 {
         rj::StringBuffer result;
         rj::Writer<rj::StringBuffer> writer(result);
 
+        writer.StartObject();
         writer.Key("valid");
         writer.Bool(true);
         writer.Key("isAuthor");
         writer.Bool(cookieCtx.session.isAuthor);
+        writer.EndObject();
 
         res.end(result.GetString());
         return;
