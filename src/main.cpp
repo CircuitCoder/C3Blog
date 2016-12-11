@@ -11,6 +11,7 @@
 #include "config.h"
 #include "auth.h"
 #include "indexer.h"
+#include "saxreader.h"
 
 using namespace C3;
 
@@ -154,6 +155,8 @@ int main(int argc, char** argv) {
     std::cout<<"Failed to parse config file. Aborting."<<std::endl;
     return -1;
   }
+
+  SAX::setup();
 
   if(!setup_storage(c.db_path, c.db_cache)) {
     std::cout<<"Failed to initialize storage. Aborting."<<std::endl;

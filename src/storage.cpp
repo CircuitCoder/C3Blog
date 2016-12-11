@@ -1,6 +1,7 @@
 #include "storage.h"
 #include "util.h"
 #include "mapper.h"
+#include "saxreader.h"
 
 #include <iostream>
 #include <sstream>
@@ -13,6 +14,8 @@
 #include <leveldb/write_batch.h>
 #include <boost/filesystem.hpp>
 #include <rapidjson/document.h>
+#include <rapidjson/reader.h>
+#include <rapidjson/stream.h>
 
 #define INIT_DB(db) \
     leveldb::Options db##Opt; \
@@ -64,19 +67,12 @@ namespace C3 {
         uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time), update_time(update_time) {}
 
   Post::Post(const std::string &json) {
-    rj::Document doc;
-    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
+    static thread_local rj::Reader reader;
+    SAX::PostSAXReader handler(*this);
+    rj::StringStream ss(json.c_str());
 
-    tags.reserve(doc["tags"].Size());
-    for(auto &tag : doc["tags"].GetArray())
-      tags.push_back(tag.GetString());
-
-    uident = doc["uident"].GetString();
-    url = doc["url"].GetString();
-    topic = doc["topic"].GetString();
-    content = doc["content"].GetString();
-    post_time = doc["post_time"].GetUint64();
-    update_time = doc["update_time"].GetUint64();
+    if(reader.Parse(ss, handler).IsError())
+      throw StorageExcept::ParseError;
 
     // Not updated yet. For backward compatibility
     if(update_time == 0) update_time = post_time;
@@ -84,16 +80,13 @@ namespace C3 {
 
   Post::Post(const std::string &json, const std::string &uident) :
         uident(uident), post_time(current_time()) {
-    rj::Document doc;
-    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
+    static thread_local rj::Reader reader;
+    SAX::PostSAXReader handler(*this, true);
+    rj::StringStream ss(json.c_str());
 
-    tags.reserve(doc["tags"].Size());
-    for(auto &tag : doc["tags"].GetArray())
-      tags.push_back(tag.GetString());
+    if(reader.Parse(ss, handler).IsError())
+      throw StorageExcept::ParseError;
 
-    url = doc["url"].GetString();
-    topic = doc["topic"].GetString();
-    content = doc["content"].GetString();
     update_time = post_time;
   }
 
@@ -179,6 +172,7 @@ namespace C3 {
         type(type), id(id), name(name), email(email), avatar(avatar) { }
 
   User::User(const std::string &json) {
+    // TODO: use SAX instread
     rj::Document doc;
     if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
 
