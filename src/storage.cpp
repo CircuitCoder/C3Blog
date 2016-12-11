@@ -223,36 +223,36 @@ namespace C3 {
      lims(lims) { }
 
   int CommaSepComparator::Compare(const leveldb::Slice &a, const leveldb::Slice &b) const {
-    std::string sa = a.ToString();
-    std::string sb = b.ToString();
+    const char *aptr = a.data(), *bptr = b.data();
+    size_t al = a.size(), bl = b.size();
 
-    auto ai = sa.cbegin();
-    auto bi = sb.cbegin();
     auto lim = this->lims.cbegin();
 
     while(true) {
-      if(ai == sa.end()) {
-        if(bi == sb.end())
+      if(!al) {
+        if(!bl)
           return 0;
-        if(*bi == ',') return -1;
+        if(*bptr == ',') return -1;
         return *lim == Limitor::Less ? -1 : 1;
-      } else if(bi == sb.end()) {
-        if(*ai == ',') return 1;
+      } else if(!bl) {
+        if(*aptr == ',') return 1;
         return *lim == Limitor::Less ? 1 : -1;
       }
 
-      if(*ai != *bi) {
-        if(*ai == ',')
+      if(*aptr != *bptr) {
+        if(*aptr == ',')
           return *lim == Limitor::Less ? -1 : 1;
-        if(*bi == ',')
+        if(*bptr == ',')
           return *lim == Limitor::Less ? 1 : -1;
-        if((unsigned) *ai < (unsigned) *bi)
+        if((unsigned) *aptr < (unsigned) *bptr)
           return *lim == Limitor::Less ? -1 : 1;
         return *lim == Limitor::Less ? 1 : -1;
-      } else if(*ai == ',') ++lim;
+      } else if(*aptr == ',') ++lim;
 
-      ++ai;
-      ++bi;
+      ++aptr;
+      ++bptr;
+      --al;
+      --bl;
     }
 
 #undef FASTFORWARD
