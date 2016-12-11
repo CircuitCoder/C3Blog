@@ -226,35 +226,36 @@ namespace C3 {
     std::string sa = a.ToString();
     std::string sb = b.ToString();
 
-    std::list<std::string> ia = split(sa, ',');
-    std::list<std::string> ib = split(sb, ',');
-
-    auto iaIter = ia.begin();
-    auto ibIter = ib.begin();
-    auto limIter = this->lims.begin();
+    auto ai = sa.cbegin();
+    auto bi = sb.cbegin();
+    auto lim = this->lims.cbegin();
 
     while(true) {
-      if(iaIter == ia.end()) {
-        if(ibIter == ib.end()) return 0;
-        else return -1;
-      } else if(ibIter == ib.end()) return 1;
-
-      Limitor lim;
-      if(limIter != this->lims.end()) lim = *limIter;
-      else lim = Limitor::Less;
-
-      if(lim == Limitor::Less) {
-        if(*iaIter < *ibIter) return -1;
-        else if(*iaIter > *ibIter) return 1;
-      } else {
-        if(*iaIter < *ibIter) return 1;
-        else if(*iaIter > *ibIter) return -1;
+      if(ai == sa.end()) {
+        if(bi == sb.end())
+          return 0;
+        if(*bi == ',') return -1;
+        return *lim == Limitor::Less ? -1 : 1;
+      } else if(bi == sb.end()) {
+        if(*ai == ',') return 1;
+        return *lim == Limitor::Less ? 1 : -1;
       }
 
-      ++iaIter;
-      ++ibIter;
-      if(limIter != this->lims.end()) ++limIter;
+      if(*ai != *bi) {
+        if(*ai == ',')
+          return *lim == Limitor::Less ? -1 : 1;
+        if(*bi == ',')
+          return *lim == Limitor::Less ? 1 : -1;
+        if((unsigned) *ai < (unsigned) *bi)
+          return *lim == Limitor::Less ? -1 : 1;
+        return *lim == Limitor::Less ? 1 : -1;
+      } else if(*ai == ',') ++lim;
+
+      ++ai;
+      ++bi;
     }
+
+#undef FASTFORWARD
   }
 
   const char* CommaSepComparator::Name() const { return "CommaSepComparator"; }
@@ -416,7 +417,7 @@ namespace C3 {
     while(it->Valid() && offset-- > 0) it->Next();
 
     for(int i = 0; (count == -1 || i < count) && it->Valid(); ++i) {
-      result.push_back(Post(it->value().ToString()));
+      result.emplace_back(it->value().ToString());
       it->Next();
     }
 
@@ -551,7 +552,7 @@ namespace C3 {
       char f;
       std::list<std::pair<uint32_t, bool>> l;
       while(ss>>v>>f)
-        l.push_back(std::make_pair(v, f == 't'));
+        l.emplace_back(v, f == 't');
 
       ++keyIter;
       res.emplace(std::stoull(*keyIter), std::move(l));
