@@ -27,7 +27,7 @@ namespace C3 {
 
     bool PostSAXReader::Uint64(uint64_t i) {
       if(!_ready) return false;
-      if(_newPost) return false; // No timestamps are allowed when creating new posts
+      if(_newPost) return true; // Ignore timestamps when creating posts
 
       _ready = false;
       if(_status == PostKey::PostTime) _target.post_time = i;
@@ -45,7 +45,10 @@ namespace C3 {
       if(_status == PostKey::Tags) _target.tags.emplace_back(str, length);
       else {
         _ready = false;
-        if(_status == PostKey::UIdent && !_newPost) _target.uident = std::string(str, length);
+        if(_status == PostKey::UIdent) {
+          if(_newPost) return true; // Ignores uident provided by the frontend
+          _target.uident = std::string(str, length);
+        }
         else if(_status == PostKey::URL) _target.url = std::string(str, length);
         else if(_status == PostKey::Topic) _target.topic = std::string(str, length);
         else if(_status == PostKey::Content) _target.content = std::string(str, length);
