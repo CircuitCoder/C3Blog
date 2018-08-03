@@ -12,6 +12,7 @@
 #include "auth.h"
 #include "indexer.h"
 #include "saxreader.h"
+#include "feed.h"
 
 using namespace C3;
 

@@ -9,8 +9,7 @@
 #include "auth.h"
 
 namespace C3 {
-
-  std::unordered_set<std::string> middleware_origins;
+  extern std::unordered_set<std::string> middleware_origins;
 
   struct Middleware {
     struct context {
@@ -62,23 +61,11 @@ namespace C3 {
       ctx.sid = sid;
     }
 
-    void after_handle(crow::request &req, crow::response &res, context& ctx) {
-      if(ctx.saveSession) saveSession(ctx.sid, ctx.session);
-
-      // Append Content-Type if not presents
-      if(res.get_header_value("Content-Type") == "") {
-        if(res.code == 200)
-          res.set_header("Content-Type", "application/json; charset=utf-8");
-        else
-          res.set_header("Content-Type", "text/plain; charset=utf-8");
-      }
-    }
+    void after_handle(crow::request &req, crow::response &res, context& ctx);
   };
 
-  void setup_middleware(const Config &c) {
-    middleware_origins.clear();
-    middleware_origins.insert(c.security_origins.begin(), c.security_origins.end());
-  }
-
-  typedef crow::detail::context<crow::CookieParser, Middleware> context;
+  void setup_middleware(const Config &c);
 }
+
+typedef crow::App<crow::CookieParser, C3::Middleware> App;
+extern std::unique_ptr<App> _app;
