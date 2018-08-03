@@ -79,7 +79,7 @@ namespace C3 {
         writer.Uint(offsetUTF8);
         writer.Key("length");
         writer.Uint(lengthUTF8);
-        writer.Key("title");
+        writer.Key("topic");
         writer.Bool(std::get<2>(hit));
         writer.EndObject(); // Hit
 
@@ -99,6 +99,21 @@ namespace C3 {
       }
 
       writer.EndArray(); // Hits
+
+      // Info
+
+      writer.Key("topic");
+      writer.String(p.topic);
+      writer.Key("tags");
+      writer.StartArray(); // Tags
+      for(auto &tag : p.tags) writer.String(tag);
+      writer.EndArray(); // Tags
+      writer.Key("url");
+      writer.String(p.url);
+      writer.Key("updated");
+      writer.Uint64(p.update_time);
+
+      // Preview
 
       ++lineCount;
 
@@ -147,14 +162,6 @@ namespace C3 {
         writer.String(p.content.substr(0, ptr - 1));
       }
 
-      writer.Key("tags");
-      writer.StartArray(); // Tags
-      for(auto &tag : p.tags) writer.String(tag);
-      writer.EndArray(); // Tags
-      writer.Key("url");
-      writer.String(p.url);
-      writer.Key("updated");
-      writer.Uint64(p.update_time);
       writer.EndObject(); // Record
 
       ++i;
@@ -163,6 +170,8 @@ namespace C3 {
     writer.EndArray(); // Results
     writer.Key("pages");
     writer.Uint64((records.size() + search_length - 1) / search_length);
+
+    writer.EndObject(); // Root
 
     res.end(result.GetString());
   }

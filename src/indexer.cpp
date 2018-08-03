@@ -102,7 +102,7 @@ namespace C3 {
         std::vector<std::string> words;
         jieba->Cut(seg, words, true);
 
-        bool isBegin = false;
+        bool isBegin = true;
         
         for(auto &word : words) {
           auto store = query_indexes(word);
