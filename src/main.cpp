@@ -88,27 +88,26 @@ void start_loop() {
     auto segs = split(cmd, ' ');
     if(segs.size() == 0) continue;
 
-    if(segs.front() == "stop") {
+    if(segs[0] == "stop") {
       if(segs.size() != 1) std::cout<<"Invalid command: \"stop\" takes no argument"<<std::endl;
       else {
         _app->stop();
         break;
       }
-    } if(segs.front() == "invalidate") {
+    } if(segs[0] == "invalidate") {
       if(segs.size() > 2) std::cout<<"Invalid command: \"invalidate\" takes 0 or 1 argument"<<std::endl;
       else if(segs.size() == 1) {
         Index::invalidate();
         Feed::invalidate();
       } else {
-        segs.pop_front();
-        if(segs.front() == "feed")
+        if(segs[1] == "feed")
           Feed::invalidate();
-        else if(segs.front() == "index")
+        else if(segs[1] == "index")
           Index::invalidate();
         else
-          std::cout<<"Invalid target: \""<<segs.front()<<"\""<<std::endl;
+          std::cout<<"Invalid target: \""<<segs[1]<<"\""<<std::endl;
       }
-    } else if(segs.front() == "help") {
+    } else if(segs[0] == "help") {
       if(segs.size() != 1) std::cout<<"Invalid command: \"help\" takes no argument"<<std::endl;
       else {
         std::cout<<"Available commands:"<<std::endl
@@ -117,7 +116,7 @@ void start_loop() {
           <<"help"<<"\t\t\t"<<"Print this message."<<std::endl;
       }
     } else {
-      std::cout<<"Unknown command: \""<<segs.front()<<"\". Type \"help\" for available commands."<<std::endl;
+      std::cout<<"Unknown command: \""<<segs[0]<<"\". Type \"help\" for available commands."<<std::endl;
     }
   }
 }

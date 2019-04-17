@@ -402,11 +402,13 @@ namespace C3 {
     }
   }
 
-  std::list<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total) {
+  std::vector<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total) {
     std::unique_ptr<leveldb::Iterator> it(postDB->NewIterator(leveldb::ReadOptions()));
     it->SeekToFirst();
 
-    std::list<Post> result;
+    std::vector<Post> result;
+    // TODO: cache total count
+    if(count > 0) result.reserve(count);
     total = 0;
 
     while(it->Valid() && offset-- > 0) {
@@ -431,29 +433,29 @@ namespace C3 {
   }
 
   /* Entries */
-  void _generate_remove_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
+  void _generate_remove_entries(const uint64_t &id, const std::vector<std::string> &list, leveldb::WriteBatch &batch) {
     for(auto &it : list)
       batch.Delete(it + "," + std::to_string(id));
   }
 
-  void _generate_add_entries(const uint64_t &id, const std::list<std::string> &list, leveldb::WriteBatch &batch) {
+  void _generate_add_entries(const uint64_t &id, const std::vector<std::string> &list, leveldb::WriteBatch &batch) {
     for(auto &it : list)
       batch.Put(it + "," + std::to_string(id), std::to_string(id));
   }
 
-  void remove_entries(const uint64_t &id, const std::list<std::string> &list) {
+  void remove_entries(const uint64_t &id, const std::vector<std::string> &list) {
     leveldb::WriteBatch batch;
     _generate_remove_entries(id, list, batch);
     entryDB->Write(leveldb::WriteOptions(), &batch);
   }
 
-  void add_entries(const uint64_t &id, const std::list<std::string> &list) {
+  void add_entries(const uint64_t &id, const std::vector<std::string> &list) {
     leveldb::WriteBatch batch;
     _generate_add_entries(id, list, batch);
     entryDB->Write(leveldb::WriteOptions(), &batch);
   }
 
-  void add_remove_entries(const uint64_t &id, const std::list<std::string> &add, const std::list<std::string> &remove) {
+  void add_remove_entries(const uint64_t &id, const std::vector<std::string> &add, const std::vector<std::string> &remove) {
     leveldb::WriteBatch batch;
     _generate_add_entries(id, add, batch);
     _generate_remove_entries(id, remove, batch);
@@ -461,11 +463,12 @@ namespace C3 {
     entryDB->Write(leveldb::WriteOptions(), &batch);
   }
 
-  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext, uint64_t &total) {
+  std::vector<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext, uint64_t &total) {
     std::unique_ptr<leveldb::Iterator> it(entryDB->NewIterator(leveldb::ReadOptions()));
     it->Seek(entry);
 
-    std::list<uint64_t> result;
+    std::vector<uint64_t> result;
+    if(count > 0) result.reserve(count);
     total = 0;
 
     while(it->Valid() && _entryEquals(it->key().ToString(), entry) && offset-- > 0) {
@@ -506,7 +509,7 @@ namespace C3 {
   }
 
   /* Index */
-  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> &indexes) {
+  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::vector<std::pair<uint32_t, bool>>> &indexes) {
     leveldb::WriteBatch indexBatch;
 
     std::string words;
@@ -553,11 +556,11 @@ namespace C3 {
     wordsDB->Delete(leveldb::WriteOptions(), std::to_string(post));
   }
 
-  std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> query_indexes(const std::string &str) {
+  std::unordered_map<uint64_t, std::vector<std::pair<uint32_t, bool>>> query_indexes(const std::string &str) {
     std::unique_ptr<leveldb::Iterator> it(indexDB->NewIterator(leveldb::ReadOptions()));
     it->Seek(str);
 
-    std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> res;
+    std::unordered_map<uint64_t, std::vector<std::pair<uint32_t, bool>>> res;
     for(; it->Valid(); it->Next()) {
       auto keySegs = split(it->key().ToString(), ',');
       auto keyIter = keySegs.begin();
@@ -566,7 +569,7 @@ namespace C3 {
       std::stringstream ss(it->value().ToString());
       uint32_t v;
       char f;
-      std::list<std::pair<uint32_t, bool>> l;
+      std::vector<std::pair<uint32_t, bool>> l;
       while(ss>>v>>f)
         l.emplace_back(v, f == 't');
 

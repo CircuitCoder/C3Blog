@@ -1,4 +1,3 @@
-#include <list>
 #include <sstream>
 #include <crow.h>
 #include <rapidjson/writer.h>
@@ -33,8 +32,7 @@ namespace C3 {
     bool hasNext;
     uint64_t total;
 
-    std::list<Post> posts = list_posts(offset, count, hasNext, total);
-    // TODO: total count
+    std::vector<Post> posts = list_posts(offset, count, hasNext, total);
 
     rj::StringBuffer result;
     rj::Writer<rj::StringBuffer> writer(result);
@@ -75,7 +73,7 @@ namespace C3 {
     bool hasNext;
     uint64_t total;
 
-    std::list<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext, total);
+    std::vector<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext, total);
 
     rj::StringBuffer result;
     rj::Writer<rj::StringBuffer> writer(result);
@@ -183,7 +181,7 @@ namespace C3 {
 
       //TODO: template
       //TODO: batch
-      add_entries(id, std::list<std::string>(p.tags.begin(), p.tags.end()));
+      add_entries(id, p.tags);
       Feed::invalidate();
 
       Index::reindex(p);
@@ -215,8 +213,8 @@ namespace C3 {
       // Tags
       sort(current.tags.begin(), current.tags.end());
 
-      std::list<std::string> removed;
-      std::list<std::string> added;
+      std::vector<std::string> removed;
+      std::vector<std::string> added;
 
       auto oriIt = original.tags.begin();
       auto curIt = current.tags.begin();
@@ -283,8 +281,7 @@ namespace C3 {
 
       remove_url(p.url);
       //TODO: batch
-      std::list<std::string> tags(p.tags.begin(), p.tags.end());
-      remove_entries(id, tags);
+      remove_entries(id, p.tags);
       delete_post(id);
 
       Feed::invalidate();

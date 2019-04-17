@@ -13,8 +13,9 @@ namespace C3 {
   namespace Index {
     cppjieba::Jieba *jieba;
 
-    typedef std::list<std::pair<uint64_t, std::list<std::tuple<uint32_t, uint32_t, bool>>>> search_result;
+    typedef std::vector<std::pair<uint64_t, std::list<std::tuple<uint32_t, uint32_t, bool>>>> search_result;
     uint32_t search_cache_size;
+    // TODO: switch to vector
     std::list<std::string> search_cache_list;
     std::unordered_map<std::string, std::pair<search_result, std::list<std::string>::iterator>> search_cache_store;
     std::mutex search_cache_mutex;
@@ -69,12 +70,12 @@ namespace C3 {
       search_cache_store.clear();
     }
 
-    std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>>
+    std::unordered_map<std::string, std::vector<std::pair<uint32_t, bool>>>
       generate(const std::string &title, const std::string &body) {
         std::vector<cppjieba::Word> titleWords, bodyWords;
         jieba->CutForSearch(title, titleWords, true);
         jieba->CutForSearch(body, bodyWords, true);
-        std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> map;
+        std::unordered_map<std::string, std::vector<std::pair<uint32_t, bool>>> map;
 
         for(auto &seg : titleWords)
           map[seg.word].emplace_back(seg.offset, true);
@@ -120,7 +121,7 @@ namespace C3 {
 
             if(res == curRes.end()) break;
 
-            const std::list<std::pair<uint32_t, bool>> &storeOccurs = store[res->first];
+            const std::vector<std::pair<uint32_t, bool>> &storeOccurs = store[res->first];
             auto storeOccurIter = storeOccurs.begin();
 
             for(auto occur = res->second.begin(); occur != res->second.end(); ++occur) {

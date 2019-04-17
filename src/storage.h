@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <list>
 #include <unordered_map>
 #include <leveldb/db.h>
 #include <leveldb/comparator.h>
@@ -134,7 +133,7 @@ namespace C3 {
   void delete_post(const uint64_t &id);
   Post get_post(const uint64_t &id);
   std::string get_post_str(const uint64_t &id);
-  std::list<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total);
+  std::vector<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total);
 
   /* Comments */
   uint64_t add_comment(const Comment &comment);
@@ -142,17 +141,17 @@ namespace C3 {
   void delete_comment(uint64_t post_id, uint64_t comment_id);
 
   /* Entries */
-  void remove_entries(const uint64_t &id, const std::list<std::string> &list);
-  void add_entries(const uint64_t &id, const std::list<std::string> &list);
-  void add_remove_entries(const uint64_t &id, const std::list<std::string> &added, const std::list<std::string> &removed);
-  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext, uint64_t &total);
+  void remove_entries(const uint64_t &id, const std::vector<std::string> &list);
+  void add_entries(const uint64_t &id, const std::vector<std::string> &list);
+  void add_remove_entries(const uint64_t &id, const std::vector<std::string> &added, const std::vector<std::string> &removed);
+  std::vector<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext, uint64_t &total);
 
   /* Users */
   bool update_user(const User &user);
   User get_user(const std::string &uident);
 
   /* Index */
-  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::list<std::pair<uint32_t, bool>>> &indexes);
+  void set_indexes(uint64_t post, const std::unordered_map<std::string, std::vector<std::pair<uint32_t, bool>>> &indexes);
   void clear_indexes(uint64_t post);
-  std::unordered_map<uint64_t, std::list<std::pair<uint32_t, bool>>> query_indexes(const std::string &str);
+  std::unordered_map<uint64_t, std::vector<std::pair<uint32_t, bool>>> query_indexes(const std::string &str);
 };
