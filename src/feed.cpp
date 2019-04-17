@@ -50,8 +50,9 @@ namespace C3 {
     }
 
     void updateAtom(void) {
-      bool dummy;
-      auto posts = list_posts(0, feed_length, dummy);
+      bool dummy_hasNext;
+      uint64_t dummy_total;
+      auto posts = list_posts(0, feed_length, dummy_hasNext, dummy_total);
 
       tinyxml2::XMLDocument doc;
 
@@ -149,8 +150,9 @@ namespace C3 {
     }
 
     void updateSitemap(void) {
-      bool dummy;
-      auto posts = list_posts(0, -1, dummy);
+      bool dummy_hasNext;
+      uint64_t dummy_total;
+      auto posts = list_posts(0, -1, dummy_hasNext, dummy_total);
 
       tinyxml2::XMLDocument doc;
 

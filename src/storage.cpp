@@ -402,20 +402,30 @@ namespace C3 {
     }
   }
 
-  std::list<Post> list_posts(int offset, int count, bool &hasNext) {
+  std::list<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total) {
     std::unique_ptr<leveldb::Iterator> it(postDB->NewIterator(leveldb::ReadOptions()));
     it->SeekToFirst();
 
     std::list<Post> result;
+    total = 0;
 
-    while(it->Valid() && offset-- > 0) it->Next();
+    while(it->Valid() && offset-- > 0) {
+      ++total;
+      it->Next();
+    }
 
     for(int i = 0; (count == -1 || i < count) && it->Valid(); ++i) {
       result.emplace_back(it->value().ToString());
+      ++total;
       it->Next();
     }
 
     hasNext = it->Valid();
+
+    while(it->Valid()) {
+      ++total;
+      it->Next();
+    }
 
     return result;
   }
@@ -451,19 +461,31 @@ namespace C3 {
     entryDB->Write(leveldb::WriteOptions(), &batch);
   }
 
-  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext) {
+  std::list<uint64_t> list_posts_by_tag(const std::string &entry, int offset, int count, bool &hasNext, uint64_t &total) {
     std::unique_ptr<leveldb::Iterator> it(entryDB->NewIterator(leveldb::ReadOptions()));
     it->Seek(entry);
 
     std::list<uint64_t> result;
-    while(it->Valid() && offset-- > 0) it->Next();
+    total = 0;
+
+    while(it->Valid() && _entryEquals(it->key().ToString(), entry) && offset-- > 0) {
+      ++total;
+      it->Next();
+    }
 
     for(int i = 0; (count == -1 || i < count) && it->Valid() && _entryEquals(it->key().ToString(), entry); ++i) {
       result.push_back(std::stoull(it->value().ToString()));
+      ++total;
       it->Next();
     }
 
     hasNext = it->Valid() && _entryEquals(it->key().ToString(), entry);
+
+    while(it->Valid() && _entryEquals(it->key().ToString(), entry)) {
+      ++total;
+      it->Next();
+    }
+
     return result;
   }
 

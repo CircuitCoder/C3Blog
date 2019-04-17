@@ -31,8 +31,9 @@ namespace C3 {
     int count = post_per_page;
 
     bool hasNext;
+    uint64_t total;
 
-    std::list<Post> posts = list_posts(offset, count, hasNext);
+    std::list<Post> posts = list_posts(offset, count, hasNext, total);
     // TODO: total count
 
     rj::StringBuffer result;
@@ -56,6 +57,8 @@ namespace C3 {
     writer.EndArray();
     writer.Key("hasNext");
     writer.Bool(hasNext);
+    writer.Key("total");
+    writer.Uint64(total);
     writer.EndObject();
 
     res.end(result.GetString());
@@ -70,8 +73,9 @@ namespace C3 {
     int count = post_per_page;
 
     bool hasNext;
+    uint64_t total;
 
-    std::list<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext);
+    std::list<uint64_t> ids = list_posts_by_tag(URLEncoding::url_decode(tag), offset, count, hasNext, total);
 
     rj::StringBuffer result;
     rj::Writer<rj::StringBuffer> writer(result);
@@ -95,6 +99,8 @@ namespace C3 {
     writer.EndArray();
     writer.Key("hasNext");
     writer.Bool(hasNext);
+    writer.Key("total");
+    writer.Uint64(total);
     writer.EndObject();
 
     res.end(result.GetString());

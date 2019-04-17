@@ -54,8 +54,9 @@ namespace C3 {
     }
 
     void reindex_all(void) {
-      bool dummy;
-      auto posts = list_posts(0, -1, dummy);
+      bool dummy_hasNext;
+      uint64_t dummy_total;
+      auto posts = list_posts(0, -1, dummy_hasNext, dummy_total);
       for(auto &p : posts)
         reindex(p);
     }
