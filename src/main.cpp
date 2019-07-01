@@ -70,6 +70,7 @@ void initialize_server(const Config &c) {
 
   CROW_ROUTE(app, "/account/login").methods("POST"_method)(handle_account_login);
   CROW_ROUTE(app, "/account/logout").methods("POST"_method)(handle_account_logout);
+  CROW_ROUTE(app, "/account/<string>").methods("GET"_method)(handle_account_query);
 
   CROW_ROUTE(app, "/feed").methods("GET"_method)(handle_feed);
   CROW_ROUTE(app, "/sitemap").methods("GET"_method)(handle_sitemap);

@@ -197,4 +197,8 @@ namespace C3 {
 
     res.end("{\"ok\": 0}");
   }
+
+  void handle_account_query(const crow::request &req, crow::response &res, const std::string &uident) {
+    res.end(get_user_str(uident));
+  }
 }

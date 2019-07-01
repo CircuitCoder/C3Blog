@@ -8,6 +8,7 @@
 #include <memory>
 #include <cassert>
 #include <cstdarg>
+#include <charconv>
 #include <chrono>
 #include <leveldb/db.h>
 #include <leveldb/cache.h>
@@ -27,7 +28,7 @@
     assert(db##Status.ok()); \
 
 namespace C3 {
-  bool _entryEquals(const std::string &entry, const std::string &key) {
+  bool _entryEquals(const std::string_view &entry, const std::string_view &key) {
     auto eit = entry.begin();
     auto kit = key.begin();
 
@@ -40,6 +41,16 @@ namespace C3 {
 
     if(eit == entry.end() || *eit == ',') return true;
     else return false;
+  }
+
+  bool _entryEquals(const std::string &entry, const std::string_view &key) {
+    const std::string_view view(entry);
+    return _entryEquals(view, key);
+  }
+
+  bool _entryEquals(const leveldb::Slice &entry, const std::string_view &key) {
+    const std::string_view view(entry.data(), entry.size());
+    return _entryEquals(view, key);
   }
 
   CommaSepComparator postCmp({ Limitor::Greater });
@@ -66,10 +77,12 @@ namespace C3 {
       uint64_t update_time) :
         uident(uident), url(url), topic(topic), content(content), tags(tags), post_time(post_time), update_time(update_time) {}
 
-  Post::Post(const std::string &json) {
+  Post::Post(const std::string_view &json) {
     static thread_local rj::Reader reader;
     SAX::PostSAXReader handler(*this);
-    rj::StringStream ss(json.c_str());
+
+    // FIXME: implement a bounded stream to avoid oob read
+    rj::StringStream ss(json.data());
 
     if(reader.Parse(ss, handler).IsError())
       throw StorageExcept::ParseError;
@@ -78,11 +91,11 @@ namespace C3 {
     if(update_time == 0) update_time = post_time;
   }
 
-  Post::Post(const std::string &json, const std::string &uident) :
+  Post::Post(const std::string_view &json, const std::string &uident) :
         uident(uident), post_time(current_time()) {
     static thread_local rj::Reader reader;
     SAX::PostSAXReader handler(*this, true);
-    rj::StringStream ss(json.c_str());
+    rj::StringStream ss(json.data());
 
     if(reader.Parse(ss, handler).IsError())
       throw StorageExcept::ParseError;
@@ -127,19 +140,19 @@ namespace C3 {
       uint64_t comment_time) :
         uident(uident), content(content), comment_time(comment_time) { }
 
-  Comment::Comment(const std::string &json) {
+  Comment::Comment(const std::string_view &json) {
     rj::Document doc;
-    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
+    if(doc.Parse(json.data(), json.size()).HasParseError()) throw StorageExcept::ParseError;
 
     uident = doc["uident"].GetString();
     content = doc["content"].GetString();
     comment_time = doc["comment_time"].GetUint64();
   }
 
-  Comment::Comment(const std::string &json, const std::string &uident) :
+  Comment::Comment(const std::string_view &json, const std::string &uident) :
         uident(uident), comment_time(current_time()) {
     rj::Document doc;
-    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
+    if(doc.Parse(json.data(), json.size()).HasParseError()) throw StorageExcept::ParseError;
 
     content = doc["content"].GetString();
   }
@@ -171,10 +184,10 @@ namespace C3 {
       const std::string &avatar) :
         type(type), id(id), name(name), email(email), avatar(avatar) { }
 
-  User::User(const std::string &json) {
+  User::User(const std::string_view &json) {
     // TODO: use SAX instread
     rj::Document doc;
-    if(doc.Parse(json).HasParseError()) throw StorageExcept::ParseError;
+    if(doc.Parse(json.data(), json.size()).HasParseError()) throw StorageExcept::ParseError;
 
     // Type
     std::string typestr = doc["type"].GetString();
@@ -303,7 +316,7 @@ namespace C3 {
 
     for(it->SeekToFirst(); it->Valid(); it->Next()) {
       try {
-        Post p(it->value().ToString());
+        Post p(toStringView(it->value()));
         add_url(p.url, p.post_time);
       } catch(MapperError e) {
         if(e == MapperError::DuplicatedUrl) return false;
@@ -332,7 +345,7 @@ namespace C3 {
     std::string authorBuf;
 
     for(it->SeekToFirst() ;it->Valid(); it->Next()) {
-      Post p = Post(it->value().ToString());
+      Post p = Post(toStringView(it->value()));
       leveldb::Status s = userDB->Get(leveldb::ReadOptions(), p.uident,&authorBuf);
       if(s.ok()) continue;
       else if(!s.IsNotFound()) return false;
@@ -417,7 +430,7 @@ namespace C3 {
     }
 
     for(int i = 0; (count == -1 || i < count) && it->Valid(); ++i) {
-      result.emplace_back(it->value().ToString());
+      result.emplace_back(toStringView(it->value()));
       ++total;
       it->Next();
     }
@@ -430,6 +443,53 @@ namespace C3 {
     }
 
     return result;
+  }
+
+  /* Comments */
+
+  uint64_t add_comment(const uint64_t post_id, const Comment &comment) {
+    const std::string id = std::to_string(post_id) + ',' + std::to_string(comment.comment_time);
+    
+    //Assume that we can't submit two post at the same millisecond 
+    leveldb::Status s = postDB->Put(leveldb::WriteOptions(), id, comment.to_json());
+    if(s.ok()) return comment.comment_time;
+    else {
+      throw s;
+    }
+  }
+
+  std::vector<Comment> get_comments(uint64_t post_id, int offset, int count, bool &hasNext, uint64_t &total) {
+    std::unique_ptr<leveldb::Iterator> it(entryDB->NewIterator(leveldb::ReadOptions()));
+    const auto str_post_id = std::to_string(post_id);
+    it->Seek(str_post_id);
+
+    std::vector<Comment> result;
+    if(count > 0) result.reserve(count);
+    total = 0;
+
+    while(it->Valid() && _entryEquals(it->key(), str_post_id) && offset-- > 0) {
+      ++total;
+      it->Next();
+    }
+
+    for(int i = 0; (count == -1 || i < count) && it->Valid() && _entryEquals(it->key(), str_post_id); ++i) {
+      result.emplace_back(toStringView(it->value()));
+      ++total;
+      it->Next();
+    }
+
+    hasNext = it->Valid() && _entryEquals(it->key(), str_post_id);
+
+    while(it->Valid() && _entryEquals(it->key(), str_post_id)) {
+      ++total;
+      it->Next();
+    }
+
+    return result;
+  }
+
+  void delete_comment(uint64_t post_id, uint64_t comment_id) {
+    // TODO: implement
   }
 
   /* Entries */
@@ -471,20 +531,24 @@ namespace C3 {
     if(count > 0) result.reserve(count);
     total = 0;
 
-    while(it->Valid() && _entryEquals(it->key().ToString(), entry) && offset-- > 0) {
+    while(it->Valid() && _entryEquals(it->key(), entry) && offset-- > 0) {
       ++total;
       it->Next();
     }
 
-    for(int i = 0; (count == -1 || i < count) && it->Valid() && _entryEquals(it->key().ToString(), entry); ++i) {
-      result.push_back(std::stoull(it->value().ToString()));
+    for(int i = 0; (count == -1 || i < count) && it->Valid() && _entryEquals(it->key(), entry); ++i) {
+      const auto view = toStringView(it->value());
+      uint64_t id;
+      // TODO: check for errors
+      std::from_chars(view.data(), view.data() + view.size(), id);
+      result.push_back(id);
       ++total;
       it->Next();
     }
 
-    hasNext = it->Valid() && _entryEquals(it->key().ToString(), entry);
+    hasNext = it->Valid() && _entryEquals(it->key(), entry);
 
-    while(it->Valid() && _entryEquals(it->key().ToString(), entry)) {
+    while(it->Valid() && _entryEquals(it->key(), entry)) {
       ++total;
       it->Next();
     }
@@ -498,14 +562,18 @@ namespace C3 {
     return s.ok();
   }
 
-  User get_user(const std::string &uident) {
+  std::string get_user_str(const std::string &uident) {
     std::string v;
     leveldb::Status s = userDB->Get(leveldb::ReadOptions(), uident, &v);
-    if(s.ok()) return User(v);
+    if(s.ok()) return v;
     else {
       if(s.IsNotFound()) throw StorageExcept::NotFound;
       else throw s;
     }
+  }
+
+  User get_user(const std::string &uident) {
+    return User(get_user_str(uident));
   }
 
   /* Index */

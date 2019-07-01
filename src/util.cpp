@@ -112,4 +112,8 @@ namespace C3 {
       return buf.str();
     }
   }
+
+  std::string_view toStringView(leveldb::Slice slice) {
+    return std::string_view(slice.data(), slice.size());
+  }
 }

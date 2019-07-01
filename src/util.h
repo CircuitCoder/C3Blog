@@ -3,6 +3,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <leveldb/slice.h>
 
 namespace C3 {
   class Randomizer {
@@ -28,4 +29,6 @@ namespace C3 {
     std::string url_encode(std::string str);
     std::string url_decode(std::string str);
   }
+
+  std::string_view toStringView(leveldb::Slice slice);
 }

@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_map>
 #include <leveldb/db.h>
@@ -39,9 +40,9 @@ namespace C3 {
         uint64_t post_time,
         uint64_t update_time);
 
-    Post(const std::string &json);
+    Post(const std::string_view &json);
 
-    Post(const std::string &json, const std::string &uident);
+    Post(const std::string_view &json, const std::string &uident);
 
     std::string to_json(void) const;
 
@@ -59,9 +60,9 @@ namespace C3 {
         const std::string &content,
         uint64_t comment_time);
 
-    Comment(const std::string &json);
+    Comment(const std::string_view &json);
 
-    Comment(const std::string &json, const std::string &uident);
+    Comment(const std::string_view &json, const std::string &uident);
 
     std::string to_json(void) const;
 
@@ -88,7 +89,7 @@ namespace C3 {
         const std::string &email,
         const std::string &avatar);
 
-    User(const std::string &json);
+    User(const std::string_view &json);
 
     std::string to_json(void) const;
 
@@ -136,8 +137,8 @@ namespace C3 {
   std::vector<Post> list_posts(int offset, int count, bool &hasNext, uint64_t &total);
 
   /* Comments */
-  uint64_t add_comment(const Comment &comment);
-  std::vector<Comment> get_comment(uint64_t post_id);
+  uint64_t add_comment(const uint64_t post_id, const Comment &comment);
+  std::vector<Comment> get_comments(uint64_t post_id, int offset, int count, bool &hasNext, uint64_t &total);
   void delete_comment(uint64_t post_id, uint64_t comment_id);
 
   /* Entries */
@@ -148,6 +149,7 @@ namespace C3 {
 
   /* Users */
   bool update_user(const User &user);
+  std::string get_user_str(const std::string &uident);
   User get_user(const std::string &uident);
 
   /* Index */
