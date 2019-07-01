@@ -17,6 +17,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/reader.h>
 #include <rapidjson/stream.h>
+#include <rapidjson/encodings.h>
 
 #define INIT_DB(db) \
     leveldb::Options db##Opt; \
@@ -28,6 +29,39 @@
     assert(db##Status.ok()); \
 
 namespace C3 {
+  template<typename Encoding>
+  struct GenericBoundedStringStream {
+    typedef typename Encoding::Ch Ch;
+
+    GenericBoundedStringStream(const Ch *src, const size_t size) : src_(src), head_(src), left(size) {}
+
+    Ch Peek() const {
+      if(left == 0) return '\0';
+      return *src_;
+    }
+
+    Ch Take() {
+      if(left == 0) return '\0';
+      --left;
+      return *src_++;
+    }
+
+    size_t Tell() {
+      return static_cast<size_t>(src_ - head_);
+    }
+
+    Ch* PutBegin() { throw "Not implemented"; return 0; }
+    void Put(Ch c) { throw "Not implemented"; }
+    void Flush() { throw "Not implemented"; }
+    size_t PutEnd(Ch* begin) { throw "Not implemented"; return 0; };
+
+    const Ch* src_;
+    const Ch* head_;
+    size_t left;
+  };
+
+  typedef GenericBoundedStringStream<rj::UTF8<>> BoundedStringStream;
+
   bool _entryEquals(const std::string_view &entry, const std::string_view &key) {
     auto eit = entry.begin();
     auto kit = key.begin();
@@ -80,9 +114,7 @@ namespace C3 {
   Post::Post(const std::string_view &json) {
     static thread_local rj::Reader reader;
     SAX::PostSAXReader handler(*this);
-
-    // FIXME: implement a bounded stream to avoid oob read
-    rj::StringStream ss(json.data());
+    BoundedStringStream ss(json.data(), json.size());
 
     if(reader.Parse(ss, handler).IsError())
       throw StorageExcept::ParseError;
@@ -95,7 +127,7 @@ namespace C3 {
         uident(uident), post_time(current_time()) {
     static thread_local rj::Reader reader;
     SAX::PostSAXReader handler(*this, true);
-    rj::StringStream ss(json.data());
+    BoundedStringStream ss(json.data(), json.size());
 
     if(reader.Parse(ss, handler).IsError())
       throw StorageExcept::ParseError;
