@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
-#include <mutex>
+#include <shared_mutex>
 
 #include "config.h"
 
@@ -13,15 +13,16 @@ namespace C3 {
     std::unordered_set<std::string> authors;
     std::unordered_map<std::string, Session> sessions;
 
-    std::mutex _writeMutex;
+    std::shared_mutex _writeMutex;
 
     void saveSession(const std::string &sid, const Session &s) {
-      std::unique_lock<std::mutex> _lock(_writeMutex);
+      std::unique_lock _lock(_writeMutex);
       sessions[sid] = s;
     }
 
     Session getSession(const std::string &sid) {
       try {
+        std::shared_lock _lock(_writeMutex);
         return sessions.at(sid);
       } catch(std::out_of_range e) {
         throw AuthError::NotSignedIn;
