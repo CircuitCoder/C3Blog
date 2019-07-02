@@ -24,7 +24,7 @@ namespace C3 {
       try {
         std::shared_lock _lock(_writeMutex);
         return sessions.at(sid);
-      } catch(std::out_of_range e) {
+      } catch(std::out_of_range &e) {
         throw AuthError::NotSignedIn;
       }
     }

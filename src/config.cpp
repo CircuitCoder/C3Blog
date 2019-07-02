@@ -9,7 +9,7 @@
 #define READ_CONFIG(ident,source,target,type,expected) \
   try { \
     this->target = config source.as<type>(); \
-  } catch(YAML::BadConversion e) { \
+  } catch(YAML::BadConversion &e) { \
     WARN_BAD_FORMAT(ident, expected); \
     return false; \
   }
@@ -24,7 +24,7 @@
       WARN_BAD_FORMAT(ident, "a list containing expected"); \
       return false; \
     } \
-  } catch(YAML::BadConversion e) { \
+  } catch(YAML::BadConversion &e) { \
     WARN_BAD_FORMAT(ident, "a list containing expected"); \
     return false; \
   } \
@@ -37,8 +37,8 @@ namespace C3 {
     try {
       YAML::Node config;
       try {
-        config = YAML::LoadFile("config.yml");
-      } catch(YAML::BadFile e) {
+        config = YAML::LoadFile(path);
+      } catch(YAML::BadFile &e) {
         std::cout<<"Config: Bad file. Please check if the config file exists."<<std::endl;
         return false;
       }
@@ -65,7 +65,7 @@ namespace C3 {
 
       READ_SEQUENCE("user.authors", ["user"]["authors"], user_authors, std::string, "strings");
 
-    } catch(YAML::Exception e) {
+    } catch(YAML::Exception &e) {
       std::cout<<"Config: Unknown exception:"<<std::endl;
       std::cout<<e.what()<<std::endl;
       return false;

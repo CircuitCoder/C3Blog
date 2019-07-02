@@ -51,9 +51,9 @@ namespace C3 {
     }
 
     Ch* PutBegin() { throw "Not implemented"; return 0; }
-    void Put(Ch c) { throw "Not implemented"; }
+    void Put([[maybe_unused]] Ch c) { throw "Not implemented"; }
     void Flush() { throw "Not implemented"; }
-    size_t PutEnd(Ch* begin) { throw "Not implemented"; return 0; };
+    size_t PutEnd([[maybe_unused]] Ch* begin) { throw "Not implemented"; return 0; };
 
     const Ch* src_;
     const Ch* head_;

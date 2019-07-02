@@ -10,7 +10,7 @@
 namespace C3 {
   std::unordered_set<std::string> middleware_origins;
 
-  void Middleware::after_handle(crow::request &req, crow::response &res, Middleware::context& ctx) {
+  void Middleware::after_handle([[maybe_unused]] crow::request &req, crow::response &res, Middleware::context& ctx) {
     if(ctx.saveSession) saveSession(ctx.sid, ctx.session);
 
     // Append Content-Type if not presents

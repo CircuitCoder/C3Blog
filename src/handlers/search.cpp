@@ -21,7 +21,7 @@ namespace C3 {
     handle_search_page(req, res, str, 1);
   }
 
-  void handle_search_page(const crow::request &req, crow::response &res, std::string str, uint64_t page) {
+  void handle_search_page([[maybe_unused]] const crow::request &req, crow::response &res, std::string str, uint64_t page) {
     auto records = Index::search(URLEncoding::url_decode(str));
     rj::StringBuffer result;
     rj::Writer<rj::StringBuffer> writer(result);

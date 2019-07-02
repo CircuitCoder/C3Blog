@@ -25,7 +25,7 @@ namespace C3 {
     return handle_post_list_page(req, res, 1);
   }
 
-  void handle_post_list_page(const crow::request &req, crow::response &res, int page) {
+  void handle_post_list_page([[maybe_unused]] const crow::request &req, crow::response &res, int page) {
     int offset = (page-1) * post_per_page;
     int count = post_per_page;
 
@@ -66,7 +66,7 @@ namespace C3 {
     return handle_post_tag_list_page(req, res, tag, 1);
   }
 
-  void handle_post_tag_list_page(const crow::request &req, crow::response &res, const std::string &tag, int page) {
+  void handle_post_tag_list_page([[maybe_unused]] const crow::request &req, crow::response &res, const std::string &tag, int page) {
     int offset = (page-1) * post_per_page;
     int count = post_per_page;
 
@@ -104,7 +104,7 @@ namespace C3 {
     res.end(result.GetString());
   }
 
-  void handle_post_read(const crow::request &req, crow::response &res, uint64_t id) {
+  void handle_post_read([[maybe_unused]] const crow::request &req, crow::response &res, uint64_t id) {
     try {
       Post p  = get_post(id);
       rj::StringBuffer result;

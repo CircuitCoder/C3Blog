@@ -18,7 +18,7 @@ namespace C3 {
     }
 
     PostSAXReader::PostSAXReader(Post &target, bool newPost) : _target(target), _status(PostKey::_IDLE), _newPost(newPost) {}
-    bool PostSAXReader::Key(const char *key, size_t length, bool copy) {
+    bool PostSAXReader::Key(const char *key, size_t length, [[maybe_unused]] bool copy) {
       _status = getTrie(&postRouter, key, length, PostKey::_IDLE);
       if(_status == PostKey::Tags) _ready = false;
       else _ready = true;
@@ -40,7 +40,7 @@ namespace C3 {
     bool PostSAXReader::Uint(int i) { return Uint64(i); }
     bool PostSAXReader::Int64(int i) { return Uint64(i); }
 
-    bool PostSAXReader::String(const char *str, size_t length, bool copy) {
+    bool PostSAXReader::String(const char *str, size_t length, [[maybe_unused]] bool copy) {
       if(!_ready) return false;
       if(_status == PostKey::Tags) _target.tags.emplace_back(str, length);
       else {
@@ -63,7 +63,7 @@ namespace C3 {
       return true;
     }
 
-    bool PostSAXReader::EndArray(size_t s) {
+    bool PostSAXReader::EndArray([[maybe_unused]] size_t s) {
       if(_status != PostKey::Tags) return false;
       _ready = false;
       _status = PostKey::_IDLE;

@@ -19,7 +19,7 @@ namespace C3 {
   uint64_t query_url(const std::string &url) {
     try {
       return urlMap.at(url);
-    } catch(std::out_of_range e) {
+    } catch(std::out_of_range &e) {
       throw MapperError::UrlNotFound;
     }
   }
@@ -28,7 +28,7 @@ namespace C3 {
     uint64_t original;
     try {
       original = urlMap.at(from);
-    } catch(std::out_of_range e) {
+    } catch(std::out_of_range &e) {
       throw MapperError::UrlNotFound;
     }
 

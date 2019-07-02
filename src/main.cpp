@@ -30,7 +30,7 @@ void join_server(const Config &c) {
   std::cout<<"Server stopped."<<std::endl;
 }
 
-void initialize_server(const Config &c) {
+void initialize_server([[maybe_unused]] const Config &c) {
   _app = std::unique_ptr<App>(new crow::App<crow::CookieParser, Middleware>());
 
   App &app = *_app;
