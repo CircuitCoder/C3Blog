@@ -23,7 +23,7 @@ namespace C3 {
 
   std::string random_chars(int);
 
-  std::string markdown(std::string);
+  std::string markdown(std::string &);
 
   namespace URLEncoding {
     std::string url_encode(std::string str);

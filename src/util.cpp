@@ -5,6 +5,7 @@
 
 extern "C" {
 #include <mkdio.h>
+#undef markdown
 }
 
 #include "util.h"
@@ -40,17 +41,21 @@ namespace C3 {
     return result;
   }
 
-  std::string markdown(std::string src) {
-    auto flags = MKD_AUTOLINK;
+  std::string markdown(std::string &src) {
+    auto flags = mkd_flags();
+    mkd_set_flag_num(flags, MKD_AUTOLINK);
     auto doc = mkd_string(src.c_str(), src.length(), flags);
 
     if(mkd_compile(doc, flags)) {
       char * buf;
       mkd_document(doc, &buf);
       std::string result(buf);
+      mkd_free_flags(flags);
       mkd_cleanup(doc);
       return result;
     } else {
+      mkd_free_flags(flags);
+      mkd_cleanup(doc);
       throw "Conversion Failed";
     }
   }
